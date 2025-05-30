@@ -18,11 +18,24 @@ class Event:
     def detect(self, event):
         for e in self.event:
             if e.type == event:
-                return True
-        return False
+                return e
+        return None
 
-    def key_down(self, key):
-        return self.detect(p.KEYDOWN) and self.key[key]
+    def key_down(self, key = None):
+        event = self.detect(p.KEYDOWN)
+        if key is None:
+            if event:
+                return event.key
+            return None
+        return event.key == key if event else False
+
+    def key_up(self, key = None):
+        event = self.detect(p.KEYUP)
+        if key is None:
+            if event:
+                return event.key
+            return None
+        return event.key == key if event else False
 
     def mouse_down(self):
         return self.detect(p.MOUSEBUTTONDOWN)
@@ -48,3 +61,6 @@ class Object:
 
     def display(self, surface, position = (0, 0)):
         self.surface.blit(surface, position)
+
+    def valid_mouse_position(self, position):
+        return self.rect.abs.collidepoint(position)

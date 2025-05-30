@@ -2,6 +2,7 @@ import pygame as p
 
 from editor import Screen
 
+
 p.init()
 screen = Screen()
 clock = p.time.Clock()
