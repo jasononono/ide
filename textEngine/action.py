@@ -42,22 +42,25 @@ class Action:
             self.keyPressed = key
             self.press(parent)
             self.keyCooldown = 30
+
         if event.key_up(self.keyPressed):
             self.keyPressed = None
+
         if event.mouse_down():
-            """
-            if self.boundary(event.mousePos):
-                coord = self.parent.get_mouse_coordinates(event.mousePos)
+            if parent.valid_mouse_position(event.mousePosition):
+                coordinate = parent.get_coordinate(location = event.mousePosition)
+                print(coordinate)
                 self.mouseDown = True
                 if self.modifier == "shift":
-                    if self.parent.highlight.position is None:
-                        self.parent.highlight.position = self.parent.cursor.py.position
-                    self.parent.cursor.py.position = self.parent.get_position(coord)
+                    if parent.highlight.position is None:
+                        parent.highlight.position = parent.cursor.position
                 else:
-                    self.parent.cursor.py.position = self.parent.get_position(coord)
-                    self.parent.cursor.py.blink = 0
-                    self.parent.highlight.position = None
-            """
+                    parent.cursor.blink = 0
+                    parent.highlight.position = None
+                parent.cursor.position = parent.get_position(coordinate = coordinate)
+
+        if event.mouse_up():
+            self.mouseDown = False
 
         if self.keyPressed is not None:
             if self.keyCooldown > 0:
@@ -66,17 +69,13 @@ class Action:
                 self.press(parent)
                 self.keyCooldown = 3
 
-        """
-        if not event.mouse[0]:
-            self.mouseDown = False
         if self.mouseDown:
-            coord = self.parent.get_mouse_coordinates(event.mousePos)
-            position = self.parent.get_position(coord)
-            if position != self.parent.cursor.py.position:
-                if position == self.parent.highlight.position:
-                    self.parent.highlight.position = None
-                elif self.parent.highlight.position is None:
-                    self.parent.highlight.position = self.parent.cursor.py.position
-                self.parent.cursor.py.position = position
-                self.parent.cursor.py.blink = 0
-        """
+            coordinate = parent.get_coordinate(location = event.mousePosition)
+            position = parent.get_position(coordinate = coordinate)
+            if position != parent.cursor.position:
+                if position == parent.highlight.position:
+                    parent.highlight.position = None
+                elif parent.highlight.position is None:
+                    parent.highlight.position = parent.cursor.position
+                parent.cursor.position = position
+                parent.cursor.blink = 0

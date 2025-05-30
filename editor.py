@@ -13,7 +13,7 @@ class Screen(Object):
         self.execute = True
 
         self.text = TextEditor("class Screen(Object):\n    def __init__(self, size = (800, 600)):",
-                                (10, 10), (780, 580), margin = (10, 10))
+                                (10, 10), (780, 580), margin = (10, 10), font = "inter")
 
     def refresh(self):
         self.event.refresh()

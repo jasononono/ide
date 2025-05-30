@@ -97,7 +97,7 @@ class TextEditor(TextDisplay):
     def get_position(self, **kwargs):
         name, value = list(kwargs.items())[0]
         if name == "location":
-            return
+            return self.get_position(coordinate = self.get_coordinate(location = value))
 
         if name == "coordinate":
             column = max(value[0], 0)
@@ -108,7 +108,14 @@ class TextEditor(TextDisplay):
     def get_coordinate(self, **kwargs):
         name, value = list(kwargs.items())[0]
         if name == "location":
-            return
+            row = (value[1] - self.margin[1] - self.rect.abs.y) / (self.spacing[1] + self.font.height)
+            row = int(max(min(row, len(self.map) - 1), 0))
+            #pointer = 0
+            #centers = [self.font.glyphs[self.map]]
+            #for n, i in enumerate()
+            column = len(self.map[row])#round((coord[0] - self.x - self.margin[0]) / self.spacing[0] / self.font.size)
+            column = round(max(min(column, len(self.map[row])), 0))
+            return column, row
 
         if name == "position":
             if value < 0:
@@ -129,6 +136,7 @@ class TextEditor(TextDisplay):
                          self.text[max(self.cursor.position, self.highlight.position):])
             self.cursor.position = min(self.cursor.position, self.highlight.position) + len(text)
         self.highlight.position = None
+        self.cursor.blink = 0
 
     def delete(self):
         if self.highlight.position is not None:
