@@ -37,12 +37,12 @@ class Action:
     def refresh(self, parent, event):
         self.modifier = get_modifier(event.key)
 
-        key = event.key_down()
-        if key in self.keyboard.map.keys():
-            self.keyPressed = key
-            self.press(parent)
-            self.keyCooldown = 30
-            p.mouse.set_visible(False)
+        for i in event.key_down():
+            if i in self.keyboard.map.keys():
+                self.keyPressed = i
+                self.press(parent)
+                self.keyCooldown = 30
+                p.mouse.set_visible(False)
 
         if event.key_up(self.keyPressed):
             self.keyPressed = None

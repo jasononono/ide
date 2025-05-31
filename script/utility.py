@@ -21,21 +21,30 @@ class Event:
                 return e
         return None
 
+    def detect_all(self, event):
+        events = []
+        for e in self.event:
+            if e.type == event:
+                events.append(e)
+        return events
+
     def key_down(self, key = None):
-        event = self.detect(p.KEYDOWN)
+        event = self.detect_all(p.KEYDOWN)
+        keys = [i.key for i in event]
         if key is None:
             if event:
-                return event.key
-            return None
-        return event.key == key if event else False
+                return keys
+            return []
+        return key in keys if event else None
 
     def key_up(self, key = None):
-        event = self.detect(p.KEYUP)
+        event = self.detect_all(p.KEYUP)
+        keys = [i.key for i in event]
         if key is None:
             if event:
-                return event.key
-            return None
-        return event.key == key if event else False
+                return keys
+            return []
+        return key in keys if event else None
 
     def mouse_down(self):
         return self.detect(p.MOUSEBUTTONDOWN)
