@@ -1,4 +1,5 @@
 import pygame as p
+import pyperclip
 from utility import Object
 from assets import palette
 
@@ -21,6 +22,7 @@ class TextDisplay(Object):
         self.spacing = spacing
 
         self.map = []
+        self.charMap = []
 
     def refresh(self, parent, event):
         self.rect.refresh(parent.rect)
@@ -36,6 +38,7 @@ class TextDisplay(Object):
 
     def display_text(self):
         self.map = [[]]
+        self.charMap = [[]]
         pointer = self.margin[0]
         line = 0
 
@@ -43,11 +46,13 @@ class TextDisplay(Object):
             self.display_char(i, line, pointer, n)
             if i == '\n':
                 self.map.append([])
+                self.charMap.append([])
                 pointer = self.margin[0]
                 line += 1
             else:
                 pointer += self.font.glyphs[i] + self.spacing[0]
                 self.map[line].append(pointer)
+                self.charMap[line].append(i)
 
 
 class TextEditor(TextDisplay):
@@ -96,8 +101,9 @@ class TextEditor(TextDisplay):
 
     def get_position(self, **kwargs):
         name, value = list(kwargs.items())[0]
+        absolute = True if "absolute" in kwargs.keys() and kwargs["absolute"] is True else False
         if name == "location":
-            return self.get_position(coordinate = self.get_coordinate(location = value))
+            return self.get_position(coordinate = self.get_coordinate(location = value, absolute = absolute))
 
         if name == "coordinate":
             column = max(value[0], 0)
@@ -107,13 +113,23 @@ class TextEditor(TextDisplay):
 
     def get_coordinate(self, **kwargs):
         name, value = list(kwargs.items())[0]
+        absolute = True if "absolute" in kwargs.keys() and kwargs["absolute"] is True else False
         if name == "location":
-            row = (value[1] - self.margin[1] - self.rect.abs.y) / (self.spacing[1] + self.font.height)
+            row = ((value[1] - self.margin[1] - (self.rect.abs.y if absolute else 0)) /
+                   (self.spacing[1] + self.font.height))
             row = int(max(min(row, len(self.map) - 1), 0))
-            #pointer = 0
-            #centers = [self.font.glyphs[self.map]]
-            #for n, i in enumerate()
-            column = len(self.map[row])#round((coord[0] - self.x - self.margin[0]) / self.spacing[0] / self.font.size)
+            if len(self.charMap[row]) == 0:
+                return 0, row
+            pointer = self.font.glyphs[self.charMap[row][0]] / 2
+            column = None
+            for i in range(1, len(self.charMap[row])):
+                if value[0] - self.margin[0] - (self.rect.abs.x if absolute else 0) < pointer:
+                    column = i - 1
+                    break
+                pointer += (self.font.glyphs[self.charMap[row][i - 1]] / 2 + self.spacing[0] +
+                            self.font.glyphs[self.charMap[row][i]] / 2)
+            if column is None:
+                column = len(self.map[row])
             column = round(max(min(column, len(self.map[row])), 0))
             return column, row
 
@@ -147,6 +163,7 @@ class TextEditor(TextDisplay):
             self.text = self.text[:self.cursor.position - 1] + self.text[self.cursor.position:]
             self.cursor.position -= 1
         self.highlight.position = None
+        self.cursor.blink = 0
 
     def cursor_left(self):
         if self.highlight.position is not None:
@@ -169,8 +186,10 @@ class TextEditor(TextDisplay):
             self.cursor.position = max(self.cursor.position, self.highlight.position)
             self.highlight.position = None
         column, row = self.get_coordinate(position = self.cursor.position)
+        location = self.get_location(coordinate = (column, row))
         self.cursor.position = (len(self.text) if row == len(self.map) - 1 else
-                                self.get_position(coordinate = (column, row + 1)))
+                                self.get_position(location = (location[0],
+                                                              location[1] + self.font.height + self.spacing[1])))
         self.cursor.blink = 0
 
     def cursor_up(self):
@@ -178,8 +197,10 @@ class TextEditor(TextDisplay):
             self.cursor.position = min(self.cursor.position, self.highlight.position)
             self.highlight.position = None
         column, row = self.get_coordinate(position = self.cursor.position)
+        location = self.get_location(coordinate = (column, row))
         self.cursor.position = (0 if row == 0 else
-                                self.get_position(coordinate = (column, row - 1)))
+                                self.get_position(location = (location[0],
+                                                              location[1] - self.font.height - self.spacing[1])))
         self.cursor.blink = 0
 
     def highlight_left(self):
@@ -200,16 +221,20 @@ class TextEditor(TextDisplay):
         if self.highlight.position is None:
             self.highlight.position = self.cursor.position
         column, row = self.get_coordinate(position = self.cursor.position)
+        location = self.get_location(coordinate = (column, row))
         self.cursor.position = (len(self.text) if row == len(self.map) - 1 else
-                                self.get_position(coordinate = (column, row + 1)))
+                                self.get_position(location = (location[0],
+                                                              location[1] + self.font.height + self.spacing[1])))
         self.cursor.blink = 0
 
     def highlight_up(self):
         if self.highlight.position is None:
             self.highlight.position = self.cursor.position
         column, row = self.get_coordinate(position = self.cursor.position)
+        location = self.get_location(coordinate = (column, row))
         self.cursor.position = (0 if row == 0 else
-                                self.get_position(coordinate = (column, row - 1)))
+                                self.get_position(location = (location[0],
+                                                              location[1] - self.font.height - self.spacing[1])))
         self.cursor.blink = 0
 
     def indent(self):
@@ -218,3 +243,14 @@ class TextEditor(TextDisplay):
     def select_all(self):
         self.highlight.position = 0
         self.cursor.position = len(self.text)
+
+    def copy(self):
+        if self.highlight.position is not None:
+            pyperclip.copy(self.text[min(self.cursor.position, self.highlight.position):max(self.cursor.position, self.highlight.position)])
+
+    def paste(self):
+        self.append(pyperclip.paste())
+
+    def cut(self):
+        self.copy()
+        self.delete()

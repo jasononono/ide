@@ -42,14 +42,14 @@ class Action:
             self.keyPressed = key
             self.press(parent)
             self.keyCooldown = 30
+            p.mouse.set_visible(False)
 
         if event.key_up(self.keyPressed):
             self.keyPressed = None
 
         if event.mouse_down():
             if parent.valid_mouse_position(event.mousePosition):
-                coordinate = parent.get_coordinate(location = event.mousePosition)
-                print(coordinate)
+                coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
                 self.mouseDown = True
                 if self.modifier == "shift":
                     if parent.highlight.position is None:
@@ -70,8 +70,7 @@ class Action:
                 self.keyCooldown = 3
 
         if self.mouseDown:
-            coordinate = parent.get_coordinate(location = event.mousePosition)
-            position = parent.get_position(coordinate = coordinate)
+            position = parent.get_position(location = event.mousePosition, absolute = True)
             if position != parent.cursor.position:
                 if position == parent.highlight.position:
                     parent.highlight.position = None

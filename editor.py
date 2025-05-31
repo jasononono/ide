@@ -19,6 +19,8 @@ class Screen(Object):
         self.event.refresh()
         if self.event.detect(p.QUIT):
             self.execute = False
+        if self.event.detect(p.MOUSEMOTION):
+            p.mouse.set_visible(True)
 
         self.surface.fill(palette.dark1)
         p.mouse.set_cursor(p.SYSTEM_CURSOR_ARROW)
