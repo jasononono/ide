@@ -1,6 +1,6 @@
 import pygame as p
 
-from script.textEngine.text import TextEditor
+from script.textEngine.text import TextEditor, CodeEditor
 
 
 class Key:
@@ -34,7 +34,7 @@ keyboard.assign(p.K_LEFT, TextEditor.cursor_left, TextEditor.highlight_left)
 keyboard.assign(p.K_RIGHT, TextEditor.cursor_right, TextEditor.highlight_right)
 keyboard.assign(p.K_DOWN, TextEditor.cursor_down, TextEditor.highlight_down)
 keyboard.assign(p.K_UP, TextEditor.cursor_up, TextEditor.highlight_up)
-keyboard.assign(p.K_BACKSPACE, TextEditor.delete)
+keyboard.assign(p.K_BACKSPACE, TextEditor.delete, TextEditor.delete)
 keyboard.assign(p.K_TAB, TextEditor.indent)
 keyboard.assign(p.K_RETURN, '\n')
 keyboard.assign(p.K_SPACE, ' ', ' ')

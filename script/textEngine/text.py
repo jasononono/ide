@@ -31,9 +31,9 @@ class TextDisplay(Object):
         self.display_text()
         parent.display(self.surface, self.rect)
 
-    def display_char(self, char, line, pointer, position):
+    def display_char(self, char, line, pointer, position, colour = None):
         if char != '\n':
-            self.display(self.font.render(char),
+            self.display(self.font.render(char, self.foreground if colour is None else colour),
                          (pointer, self.margin[1] + line * (self.font.height + self.spacing[1])))
 
     def display_text(self):
@@ -58,7 +58,7 @@ class TextDisplay(Object):
 class TextEditor(TextDisplay):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 13, margin = (0, 0), spacing = (0, 0)):
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
         super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
         from script.textEngine.keyboard import keyboard
         self.action = Action(keyboard)
@@ -66,15 +66,14 @@ class TextEditor(TextDisplay):
         self.highlight = Cursor()
         self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
 
-    def display_char(self, char, line, pointer, position):
+    def display_char(self, char, line, pointer, position, colour = None):
         highlighted = (self.highlight.position is not None and min(self.cursor.position, self.highlight.position) <=
                        position < max(self.cursor.position, self.highlight.position))
         y_location = self.margin[1] + line * (self.font.height + self.spacing[1])
         if highlighted:
             p.draw.rect(self.surface, self.highlightForeground,
                         (pointer, y_location, self.font.glyphs[char], self.font.height))
-        if char != '\n':
-            self.display(self.font.render(char), (pointer, y_location))
+        super().display_char(char, line, pointer, position, colour)
 
     def display_text(self):
         super().display_text()
@@ -257,3 +256,35 @@ class TextEditor(TextDisplay):
     def cut(self):
         self.copy()
         self.delete()
+
+
+class CodeEditor(TextEditor):
+    def __init__(self, text = "", position = (0, 0), size = (400, 300),
+                 background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+        super().__init__(text, position, size, background, foreground, highlight_foreground,
+                         font,font_size, margin, spacing)
+        self.syntax = ""
+
+    def display_char(self, char, line, pointer, position, colour = None):
+        super().display_char(char, line, pointer, position,
+                             (100, 255, 100) if self.syntax[position] == 's' else None)
+
+    def display_text(self):
+        self.highlight_syntax()
+        super().display_text()
+
+    def highlight_syntax(self):
+        self.syntax = ""
+        string = None
+        for i in self.text:
+            if string is None:
+                if i in ('"', "'"):
+                    string = i
+                    self.syntax += 's'
+                else:
+                    self.syntax += ' '
+            else:
+                if i == string:
+                    string = None
+                self.syntax += 's'
