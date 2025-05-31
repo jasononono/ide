@@ -1,6 +1,6 @@
 import pygame as p
 
-from textEngine.text import TextEditor
+from script.textEngine.text import TextEditor
 
 
 class Key:

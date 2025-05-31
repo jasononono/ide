@@ -1,11 +1,11 @@
 import pygame as p
 import pyperclip
-from utility import Object
+from script.utility import Object
 from assets import palette
 
-from textEngine.font import Font
-from textEngine.cursor import Cursor
-from textEngine.action import Action
+from script.textEngine.font import Font
+from script.textEngine.cursor import Cursor
+from script.textEngine.action import Action
 
 
 class TextDisplay(Object):
@@ -58,9 +58,9 @@ class TextDisplay(Object):
 class TextEditor(TextDisplay):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+                 font = None, font_size = 13, margin = (0, 0), spacing = (0, 0)):
         super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
-        from textEngine.keyboard import keyboard
+        from script.textEngine.keyboard import keyboard
         self.action = Action(keyboard)
         self.cursor = Cursor(0)
         self.highlight = Cursor()
@@ -118,16 +118,18 @@ class TextEditor(TextDisplay):
             row = ((value[1] - self.margin[1] - (self.rect.abs.y if absolute else 0)) /
                    (self.spacing[1] + self.font.height))
             row = int(max(min(row, len(self.map) - 1), 0))
+
             if len(self.charMap[row]) == 0:
                 return 0, row
-            pointer = self.font.glyphs[self.charMap[row][0]] / 2
+            pointer = 0
             column = None
-            for i in range(1, len(self.charMap[row])):
+            for i in range(len(self.charMap[row])):
+                pointer += (0 if i == 0 else self.font.glyphs[self.charMap[row][i - 1]] / 2 + self.spacing[0])
+                pointer += self.font.glyphs[self.charMap[row][i]] / 2
                 if value[0] - self.margin[0] - (self.rect.abs.x if absolute else 0) < pointer:
-                    column = i - 1
+                    column = i
                     break
-                pointer += (self.font.glyphs[self.charMap[row][i - 1]] / 2 + self.spacing[0] +
-                            self.font.glyphs[self.charMap[row][i]] / 2)
+
             if column is None:
                 column = len(self.map[row])
             column = round(max(min(column, len(self.map[row])), 0))
@@ -246,7 +248,8 @@ class TextEditor(TextDisplay):
 
     def copy(self):
         if self.highlight.position is not None:
-            pyperclip.copy(self.text[min(self.cursor.position, self.highlight.position):max(self.cursor.position, self.highlight.position)])
+            pyperclip.copy(self.text[min(self.cursor.position, self.highlight.position):
+                                     max(self.cursor.position, self.highlight.position)])
 
     def paste(self):
         self.append(pyperclip.paste())

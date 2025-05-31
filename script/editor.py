@@ -1,8 +1,8 @@
 import pygame as p
-from utility import Object, Event
+from script.utility import Object, Event
 from assets import palette
 
-from textEngine.text import TextEditor
+from script.textEngine.text import TextEditor
 
 
 class Screen(Object):
@@ -12,8 +12,8 @@ class Screen(Object):
         self.event = Event()
         self.execute = True
 
-        self.text = TextEditor("class Screen(Object):\n    def __init__(self, size = (800, 600)):",
-                                (10, 10), (780, 580), margin = (10, 10), font = "inter")
+        self.text = TextEditor("",
+                                (10, 10), (780, 580), margin = (10, 10))
 
     def refresh(self):
         self.event.refresh()
