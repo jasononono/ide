@@ -64,8 +64,8 @@ class Rect(p.Rect):
 
 
 class Object:
-    def __init__(self, position, size):
-        self.surface = p.Surface(size)
+    def __init__(self, position, size, alpha = False):
+        self.surface = p.Surface(size, p.SRCALPHA) if alpha else p.Surface(size)
         self.rect = Rect(position, size)
 
     def display(self, surface, position = (0, 0)):

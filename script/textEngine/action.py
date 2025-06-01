@@ -63,6 +63,7 @@ class Action:
             self.mouseDown = False
 
         if self.keyPressed is not None:
+            parent.cursor.blink = 0
             if self.keyCooldown > 0:
                 self.keyCooldown -= 1
             else:

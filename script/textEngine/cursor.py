@@ -15,8 +15,8 @@ class Cursor:
     def refresh(self, parent):
         self.blink = (self.blink + 1) % (self.blinkRate * 2)
         location = parent.get_location(position = self.position)
-        if self.location is None or not settings.cursorAnimation:
-            self.location = location
+        if self.location is None or not settings.smoothCursor:
+            self.location = location[0], location[1] + parent.font.height / 10
         else:
             self.location = [round((i + j) / 2) for i, j in zip(self.location,
                                                                 (location[0], location[1] + parent.font.height / 10))]
@@ -24,10 +24,10 @@ class Cursor:
         self.surface = p.transform.scale(self.surface, (1, parent.font.height * 4 / 5))
         self.surface.fill(self.colour)
 
-        if settings.smoothCursor:
+        if settings.cursorAnimation:
             tick = self.blink / self.blinkRate
             alpha = (tick - int(tick)) if int(tick) % 2 else int(tick) - tick + 1
-            self.surface.set_alpha(round(255 * min(255.0, 2 * alpha ** 2)))
+            self.surface.set_alpha(round(255 * max(0.0, min(1.0, 2 * alpha ** 2))))
             parent.display(self.surface, self.location)
         elif self.blink < self.blinkRate:
             parent.display(self.surface, self.location)
