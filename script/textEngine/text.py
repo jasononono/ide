@@ -167,7 +167,7 @@ class TextEditor(TextDisplay):
             self.cursor.position -= 1
         if self.highlight.position is not None:
             self.highlight.position = None
-            self.cursor.location = None
+            self.cursor.location = Noned
         self.cursor.blink = 0
 
     def cursor_left(self):

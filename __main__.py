@@ -3,7 +3,7 @@ dependency_check()
 
 
 import pygame as p
-import info
+import settings
 
 from script.editor import Screen
 
@@ -15,5 +15,5 @@ clock = p.time.Clock()
 while screen.execute:
     clock.tick(60)
     screen.refresh()
-    p.display.set_caption(f"Beta IDE {info.version}")
+    p.display.set_caption(f"Beta IDE {settings.version}")
 p.quit()
