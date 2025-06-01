@@ -152,7 +152,9 @@ class TextEditor(TextDisplay):
             self.text = (self.text[:min(self.cursor.position, self.highlight.position)] + text +
                          self.text[max(self.cursor.position, self.highlight.position):])
             self.cursor.position = min(self.cursor.position, self.highlight.position) + len(text)
-        self.highlight.position = None
+        if self.highlight.position is not None:
+            self.highlight.position = None
+            self.cursor.location = None
         self.cursor.blink = 0
 
     def delete(self):
@@ -163,21 +165,26 @@ class TextEditor(TextDisplay):
         elif self.cursor.position > 0:
             self.text = self.text[:self.cursor.position - 1] + self.text[self.cursor.position:]
             self.cursor.position -= 1
-        self.highlight.position = None
+        if self.highlight.position is not None:
+            self.highlight.position = None
+            self.cursor.location = None
         self.cursor.blink = 0
 
     def cursor_left(self):
         if self.highlight.position is not None:
             self.cursor.position = min(self.cursor.position, self.highlight.position)
             self.highlight.position = None
+            self.cursor.location = None
         elif self.cursor.position > 0:
             self.cursor.position -= 1
         self.cursor.blink = 0
+
 
     def cursor_right(self):
         if self.highlight.position is not None:
             self.cursor.position = max(self.cursor.position, self.highlight.position)
             self.highlight.position = None
+            self.cursor.location = None
         elif self.cursor.position < len(self.text):
             self.cursor.position += 1
         self.cursor.blink = 0
