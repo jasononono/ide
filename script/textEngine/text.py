@@ -1,5 +1,6 @@
 import pygame as p
 import pyperclip
+import settings
 from script.utility import Object
 from assets import palette
 
@@ -9,8 +10,7 @@ from script.textEngine.action import Action
 
 
 class TextEffect:
-    def __init__(self, char = None, opacity = 255, colour = None, highlight = 0):
-        self.char = char
+    def __init__(self, opacity = 255, colour = None, highlight = 0):
         self.opacity = opacity
         self.colour = colour
         self.highlight = highlight
@@ -40,11 +40,12 @@ class TextDisplay(Object):
         self.display_text()
         parent.display(self.surface, self.rect)
 
-    def display_char(self, line, pointer, position):
-        if self.textEffects[position].char not in ('\n', None):
+    def display_char(self, char, line, pointer, position):
+        if char != '\n':
             colour = self.foreground if self.textEffects[position].colour is None else self.textEffects[position].colour
-            surface = self.font.render(self.textEffects[position].char, colour)
-            surface.set_alpha(self.textEffects[position].opacity)
+            surface = self.font.render(char, colour)
+            if settings.smoothText:
+                surface.set_alpha(self.textEffects[position].opacity)
             self.display(surface, (pointer, self.margin[1] + line * (self.font.height + self.spacing[1])))
 
     def display_text(self):
@@ -55,18 +56,12 @@ class TextDisplay(Object):
 
         if len(self.textEffects) > len(self.text):
             self.textEffects = self.textEffects[:len(self.text)]
-        else:
-            for _ in range(len(self.text) - len(self.textEffects)):
-                self.textEffects.append(TextEffect())
 
         for n, i in enumerate(self.text):
-            if i != self.textEffects[n].char:
-                if self.textEffects[n].char is None:
-                    self.textEffects[n].opacity = 0
-            self.textEffects[n].opacity = min(255, self.textEffects[n].opacity + 50)
-            self.textEffects[n].char = i
+            if settings.smoothText:
+                self.textEffects[n].opacity = min(255, self.textEffects[n].opacity + settings.textFadeIn)
 
-            self.display_char(line, pointer, n)
+            self.display_char(i, line, pointer, n)
             if i == '\n':
                 self.map.append([])
                 self.charMap.append([])
@@ -89,21 +84,24 @@ class TextEditor(TextDisplay):
         self.highlight = Cursor()
         self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
 
-    def display_char(self, line, pointer, position):
+    def display_char(self, char, line, pointer, position):
         highlighted = int(self.highlight.position is not None and min(self.cursor.position, self.highlight.position) <=
                           position < max(self.cursor.position, self.highlight.position))
-        if highlighted:
-            self.textEffects[position].highlight = min(255, self.textEffects[position].highlight + 50)
-        else:
-            self.textEffects[position].highlight = max(0, self.textEffects[position].highlight - 50)
-
         y_location = self.margin[1] + line * (self.font.height + self.spacing[1])
 
-        surface = p.Surface((self.font.glyphs[self.textEffects[position].char], self.font.height))
+        surface = p.Surface((self.font.glyphs[char], self.font.height))
         surface.fill(self.highlightForeground)
-        surface.set_alpha(self.textEffects[position].highlight)
-        self.display(surface, (pointer, y_location))
-        super().display_char(line, pointer, position)
+
+        if settings.smoothHighlight:
+            self.textEffects[position].highlight = (min(255, self.textEffects[position].highlight +
+                                                       settings.highlightFadeIn) if highlighted else
+                                                    max(0, self.textEffects[position].highlight -
+                                                        settings.highlightFadeIn))
+            surface.set_alpha(self.textEffects[position].highlight)
+            self.display(surface, (pointer, y_location))
+        elif highlighted:
+            self.display(surface, (pointer, y_location))
+        super().display_char(char, line, pointer, position)
 
     def display_text(self):
         super().display_text()
@@ -177,29 +175,37 @@ class TextEditor(TextDisplay):
     def append(self, text):
         if self.highlight.position is None:
             self.text = self.text[:self.cursor.position] + text + self.text[self.cursor.position:]
-            # print(self.cursor.position, self.cursor.position + len(text))
-            # for i in range(self.cursor.position, self.cursor.position + len(text)):
-            #     self.textEffects[i].opacity = 0
+            for i in range(self.cursor.position, self.cursor.position + len(text)):
+                self.textEffects.append(TextEffect())
+                if settings.smoothText:
+                    self.textEffects[i].opacity = 0
             self.cursor.position += len(text)
+
         else:
-            self.text = (self.text[:min(self.cursor.position, self.highlight.position)] + text +
-                         self.text[max(self.cursor.position, self.highlight.position):])
-            self.cursor.position = min(self.cursor.position, self.highlight.position) + len(text)
-        if self.highlight.position is not None:
-            self.highlight.position = None
+            start = min(self.cursor.position, self.highlight.position)
+            self.text = (self.text[:start] + text + self.text[max(self.cursor.position, self.highlight.position):])
+            for i in range(start, start + len(text)):
+                self.textEffects.append(TextEffect())
+                if settings.smoothText:
+                    self.textEffects[i].opacity = 0
+            self.cursor.position = start + len(text)
             self.cursor.location = None
+            self.highlight.position = None
 
     def delete(self):
         if self.highlight.position is not None:
-            self.text = (self.text[:min(self.cursor.position, self.highlight.position)] +
-                         self.text[max(self.cursor.position, self.highlight.position):])
-            self.cursor.position = min(self.cursor.position, self.highlight.position)
+            start = min(self.cursor.position, self.highlight.position)
+            self.text = (self.text[:start] + self.text[max(self.cursor.position, self.highlight.position):])
+            if settings.smoothHighlight:
+                for i in range(start, start + abs(self.highlight.position - self.cursor.position)):
+                    self.textEffects[i].highlight = 0
+            self.cursor.position = start
+            self.cursor.location = None
+            self.highlight.position = None
+
         elif self.cursor.position > 0:
             self.text = self.text[:self.cursor.position - 1] + self.text[self.cursor.position:]
             self.cursor.position -= 1
-        if self.highlight.position is not None:
-            self.highlight.position = None
-            self.cursor.location = None
 
     def cursor_left(self):
         if self.highlight.position is not None:
@@ -209,7 +215,6 @@ class TextEditor(TextDisplay):
         elif self.cursor.position > 0:
             self.cursor.position -= 1
         self.cursor.blink = 0
-
 
     def cursor_right(self):
         if self.highlight.position is not None:
@@ -304,8 +309,8 @@ class CodeEditor(TextEditor):
                          font,font_size, margin, spacing)
         self.syntax = ""
 
-    def display_char(self, line, pointer, position):
-        super().display_char(line, pointer, position)
+    def display_char(self, char, line, pointer, position):
+        super().display_char(char, line, pointer, position)
 
     def display_text(self):
         self.highlight_syntax()

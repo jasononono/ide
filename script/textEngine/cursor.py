@@ -7,7 +7,7 @@ class Cursor:
     def __init__(self, position = None):
         self.position = position
         self.location = None
-        self.blinkRate = 30
+        self.blinkRate = settings.cursorBlinkRate
         self.blink = 0
         self.colour = palette.white
         self.surface = p.Surface((1, 1))
