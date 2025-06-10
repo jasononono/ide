@@ -28,6 +28,7 @@ class TextDisplay(Object):
         self.font = Font(font_size, font)
         self.margin = margin
         self.spacing = spacing
+        self.offset = [0, 0]
 
         self.map = []
         self.charMap = []
@@ -46,7 +47,8 @@ class TextDisplay(Object):
             surface = self.font.render(char, colour)
             if settings.smoothText:
                 surface.set_alpha(self.textEffects[position].opacity)
-            self.display(surface, (pointer, self.margin[1] + line * (self.font.height + self.spacing[1])))
+            self.display(surface, (pointer - self.offset[0],
+                                   self.margin[1] + line * (self.font.height + self.spacing[1]) - self.offset[1]))
 
     def display_text(self):
         self.map = [[]]
@@ -89,7 +91,7 @@ class TextEditor(TextDisplay):
                           position < max(self.cursor.position, self.highlight.position))
         y_location = self.margin[1] + line * (self.font.height + self.spacing[1])
 
-        surface = p.Surface((self.font.glyphs[char], self.font.height))
+        surface = p.Surface((self.font.glyphs[char] + self.spacing[0], self.font.height + self.spacing[1]))
         surface.fill(self.highlightForeground)
 
         if settings.smoothHighlight:
@@ -98,9 +100,9 @@ class TextEditor(TextDisplay):
                                                     max(0, self.textEffects[position].highlight -
                                                         settings.highlightFadeIn))
             surface.set_alpha(self.textEffects[position].highlight)
-            self.display(surface, (pointer, y_location))
+            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
         elif highlighted:
-            self.display(surface, (pointer, y_location))
+            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
         super().display_char(char, line, pointer, position)
 
     def display_text(self):
@@ -142,7 +144,7 @@ class TextEditor(TextDisplay):
         name, value = list(kwargs.items())[0]
         absolute = True if "absolute" in kwargs.keys() and kwargs["absolute"] is True else False
         if name == "location":
-            row = ((value[1] - self.margin[1] - (self.rect.abs.y if absolute else 0)) /
+            row = ((value[1] + self.offset[1] - self.margin[1] - (self.rect.abs.y if absolute else 0)) /
                    (self.spacing[1] + self.font.height))
             row = int(max(min(row, len(self.map) - 1), 0))
 
@@ -153,7 +155,7 @@ class TextEditor(TextDisplay):
             for i in range(len(self.charMap[row])):
                 pointer += (0 if i == 0 else self.font.glyphs[self.charMap[row][i - 1]] / 2 + self.spacing[0])
                 pointer += self.font.glyphs[self.charMap[row][i]] / 2
-                if value[0] - self.margin[0] - (self.rect.abs.x if absolute else 0) < pointer:
+                if value[0] + self.offset[0] - self.margin[0] - (self.rect.abs.x if absolute else 0) < pointer:
                     column = i
                     break
 

@@ -78,4 +78,5 @@ class Action:
                 elif parent.highlight.position is None:
                     parent.highlight.position = parent.cursor.position
                 parent.cursor.position = position
+                parent.cursor.location = None
                 parent.cursor.blink = 0

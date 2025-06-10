@@ -12,7 +12,8 @@ class Screen(Object):
         self.event = Event()
         self.execute = True
 
-        self.text = TextEditor("", (10, 10), (780, 580), margin = (10, 10))
+        self.text = TextEditor("", (10, 10), (780, 580), font_size = 15,
+                               margin = (10, 10), spacing = (0, 3))
 
     def refresh(self):
         self.event.refresh()
@@ -25,5 +26,3 @@ class Screen(Object):
         p.mouse.set_cursor(p.SYSTEM_CURSOR_ARROW)
 
         self.text.refresh(self, self.event)
-
-        p.display.flip()
