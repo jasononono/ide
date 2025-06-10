@@ -80,8 +80,8 @@ class TextEditor(TextDisplay):
                  background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
                  font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
         super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
-        from script.textEngine.keyboard import keyboard
-        self.action = Action(keyboard)
+        from script.textEngine.keymap import keymap
+        self.action = Action(keymap)
         self.cursor = Cursor(0)
         self.highlight = Cursor()
         self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
