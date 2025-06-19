@@ -58,6 +58,9 @@ class TextDisplay(Object):
 
         if len(self.textEffects) > len(self.text):
             self.textEffects = self.textEffects[:len(self.text)]
+        else:
+            for _ in range(len(self.text) - len(self.textEffects)):
+                self.textEffects.append(TextEffect())
 
         for n, i in enumerate(self.text):
             if settings.smoothText:
@@ -127,6 +130,7 @@ class TextEditor(TextDisplay):
         if name == "coordinate":
             return ((self.margin[0] if value[0] == 0 else self.map[value[1]][value[0] - 1]),
                    self.margin[1] + value[1] * (self.font.height + self.spacing[1]))
+        return None
 
     def get_position(self, **kwargs):
         name, value = list(kwargs.items())[0]
@@ -139,6 +143,7 @@ class TextEditor(TextDisplay):
             row = max(value[1], 0)
             pos = sum([len(i) for i in self.map[:row]]) + row + min(len(self.map[row]), column)
             return min(len(self.text), max(0, pos))
+        return None
 
     def get_coordinate(self, **kwargs):
         name, value = list(kwargs.items())[0]
@@ -173,6 +178,7 @@ class TextEditor(TextDisplay):
                 if value < total:
                     return value - total + len(j) + 1, i
             return self.get_coordinate(position = len(self.text))
+        return None
 
     def append(self, text):
         if self.highlight.position is None:
@@ -301,34 +307,3 @@ class TextEditor(TextDisplay):
     def cut(self):
         self.copy()
         self.delete()
-
-
-class CodeEditor(TextEditor):
-    def __init__(self, text = "", position = (0, 0), size = (400, 300),
-                 background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
-        super().__init__(text, position, size, background, foreground, highlight_foreground,
-                         font,font_size, margin, spacing)
-        self.syntax = ""
-
-    def display_char(self, char, line, pointer, position):
-        super().display_char(char, line, pointer, position)
-
-    def display_text(self):
-        self.highlight_syntax()
-        super().display_text()
-
-    def highlight_syntax(self):
-        self.syntax = ""
-        string = None
-        for i in self.text:
-            if string is None:
-                if i in ('"', "'"):
-                    string = i
-                    self.syntax += 's'
-                else:
-                    self.syntax += ' '
-            else:
-                if i == string:
-                    string = None
-                self.syntax += 's'

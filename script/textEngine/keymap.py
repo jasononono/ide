@@ -1,6 +1,7 @@
 import pygame as p
 
-from script.textEngine.text import TextEditor, CodeEditor
+from script.textEngine.text import TextEditor
+from script.textEngine.code import CodeEditor
 
 
 class Key:
@@ -62,7 +63,7 @@ keymap.assign(p.K_SLASH, '/', '?')
 keymap.assign(p.K_q, 'q', 'Q')
 keymap.assign(p.K_w, 'w', 'W')
 keymap.assign(p.K_e, 'e', 'E')
-keymap.assign(p.K_r, 'r', 'R')
+keymap.assign(p.K_r, 'r', 'R', CodeEditor.run)
 keymap.assign(p.K_t, 't', 'T')
 keymap.assign(p.K_y, 'y', 'Y')
 keymap.assign(p.K_u, 'u', 'U')

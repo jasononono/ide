@@ -71,5 +71,15 @@ class Object:
     def display(self, surface, position = (0, 0)):
         self.surface.blit(surface, position)
 
+    def fill(self, *args, **kwargs):
+        self.surface.fill(*args, **kwargs)
+
+    def draw_rect(self, *args, **kwargs):
+        p.draw.rect(self.surface, *args, **kwargs)
+
+    def draw_line(self, *args, **kwargs):
+        p.draw.line(self.surface, *args, **kwargs)
+
     def valid_mouse_position(self, position):
         return self.rect.abs.collidepoint(position)
+
