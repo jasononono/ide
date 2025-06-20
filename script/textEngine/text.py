@@ -132,6 +132,7 @@ class FancyDisplay(StaticDisplay):
                  font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
         super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
         self.textEffects = []
+        self.write(text)
 
     def write(self, text):
         if len(self.textEffects) > len(text):
@@ -187,7 +188,6 @@ class TextDisplay(FancyDisplay):
     def refresh(self, parent, event):
         self.action.refresh(self, event)
         super().refresh(parent, event)
-
 
 
 class TextEditor(TextDisplay):

@@ -13,11 +13,11 @@ class Screen(Object):
         self.event = Event()
         self.execute = True
 
-        self.text = CodeEditor("", (10, 10), (580, 580), font_size = 13,
-                               margin = (10, 10), spacing = (0, 3))
-
-        self.output = TextDisplay("", (600, 10), (390, 580), font_size = 13,
+        self.output = TextDisplay("Beta IDE", (600, 10), (390, 580), font_size = 13,
                                   margin = (10, 10), spacing = (0, 3))
+
+        self.text = CodeEditor("", (10, 10), (580, 580), font_size = 13,
+                               margin = (10, 10), spacing = (0, 3), output_channel = self.output)
 
     def refresh(self):
         self.event.refresh()
@@ -30,5 +30,4 @@ class Screen(Object):
         p.mouse.set_cursor(p.SYSTEM_CURSOR_ARROW)
 
         self.text.refresh(self, self.event)
-        self.output.write(self.text.output)
         self.output.refresh(self, self.event)

@@ -8,7 +8,8 @@ from script.textEngine.text import TextEditor
 class CodeEditor(TextEditor):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0),
+                 output_channel = None):
         super().__init__(text, position, size, background, foreground, highlight_foreground,
                          font, font_size, margin, spacing)
         from script.textEngine.keymap import code_keymap
@@ -16,6 +17,7 @@ class CodeEditor(TextEditor):
 
         self.syntax = ""
         self.output = ""
+        self.outputChannel = output_channel
 
     def display_char(self, char, line, pointer, position):
         super().display_char(char, line, pointer, position)
@@ -56,6 +58,9 @@ class CodeEditor(TextEditor):
             error.write("Traceback (most recent call last):\n" + ''.join(traceback.format_list(exception)) +
                         f"{type(e).__name__}: {e}\n")
             self.output += error.getvalue() + "\nprocess finished with exit code 1"
+
+        if self.outputChannel:
+            self.outputChannel.write(self.output)
 
         sys.stdout = stdout
         sys.stderr = stderr
