@@ -17,7 +17,7 @@ def get_modifier(keys):
     return None
 
 
-class Action:
+class ViewAction:
     def __init__(self, keyboard):
         self.keyboard = keyboard
         self.keyPressed = None
@@ -33,6 +33,48 @@ class Action:
             key(parent)
         else:
             parent.append(key)
+
+    def refresh(self, parent, event):
+        self.modifier = get_modifier(event.key)
+
+        for i in event.key_down():
+            if i in self.keyboard.map.keys():
+                self.keyPressed = i
+                self.press(parent)
+                self.keyCooldown = 30
+                p.mouse.set_visible(False)
+
+        if event.key_up(self.keyPressed):
+            self.keyPressed = None
+
+        if event.mouse_down():
+            if parent.valid_mouse_position(event.mousePosition):
+                coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
+                self.mouseDown = True
+                parent.cursor.position = parent.get_position(coordinate = coordinate)
+
+        if event.mouse_up():
+            self.mouseDown = False
+
+        if self.keyPressed is not None:
+            parent.cursor.blink = 0
+            if self.keyCooldown > 0:
+                self.keyCooldown -= 1
+            else:
+                self.press(parent)
+                self.keyCooldown = 3
+
+        if self.mouseDown:
+            position = parent.get_position(location = event.mousePosition, absolute = True)
+            if position != parent.cursor.position:
+                parent.highlight.position = position
+            else:
+                parent.highlight.position = None
+
+
+class EditAction(ViewAction):
+    def __init__(self, keyboard):
+        super().__init__(keyboard)
 
     def refresh(self, parent, event):
         self.modifier = get_modifier(event.key)

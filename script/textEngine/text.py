@@ -6,7 +6,7 @@ from assets import palette
 
 from script.textEngine.font import Font
 from script.textEngine.cursor import Cursor
-from script.textEngine.action import Action
+from script.textEngine.action import ViewAction, EditAction
 
 
 class TextEffect:
@@ -16,7 +16,7 @@ class TextEffect:
         self.highlight = highlight
 
 
-class TextDisplay(Object):
+class StaticDisplay(Object):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white,
                  font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
@@ -32,7 +32,6 @@ class TextDisplay(Object):
 
         self.map = []
         self.charMap = []
-        self.textEffects = []
 
     def refresh(self, parent, event):
         self.rect.refresh(parent.rect)
@@ -41,12 +40,12 @@ class TextDisplay(Object):
         self.display_text()
         parent.display(self.surface, self.rect)
 
+    def write(self, text):
+        self.text = text
+
     def display_char(self, char, line, pointer, position):
         if char != '\n':
-            colour = self.foreground if self.textEffects[position].colour is None else self.textEffects[position].colour
-            surface = self.font.render(char, colour)
-            if settings.smoothText:
-                surface.set_alpha(self.textEffects[position].opacity)
+            surface = self.font.render(char, self.foreground)
             self.display(surface, (pointer - self.offset[0],
                                    self.margin[1] + line * (self.font.height + self.spacing[1]) - self.offset[1]))
 
@@ -56,16 +55,7 @@ class TextDisplay(Object):
         pointer = self.margin[0]
         line = 0
 
-        if len(self.textEffects) > len(self.text):
-            self.textEffects = self.textEffects[:len(self.text)]
-        else:
-            for _ in range(len(self.text) - len(self.textEffects)):
-                self.textEffects.append(TextEffect())
-
         for n, i in enumerate(self.text):
-            if settings.smoothText:
-                self.textEffects[n].opacity = min(255, self.textEffects[n].opacity + settings.textFadeIn)
-
             self.display_char(i, line, pointer, n)
             if i == '\n':
                 self.map.append([])
@@ -76,51 +66,6 @@ class TextDisplay(Object):
                 pointer += self.font.glyphs[i] + self.spacing[0]
                 self.map[line].append(pointer)
                 self.charMap[line].append(i)
-
-
-class TextEditor(TextDisplay):
-    def __init__(self, text = "", position = (0, 0), size = (400, 300),
-                 background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
-        super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
-        from script.textEngine.keymap import keymap
-        self.action = Action(keymap)
-        self.cursor = Cursor(0)
-        self.highlight = Cursor()
-        self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
-
-    def display_char(self, char, line, pointer, position):
-        highlighted = int(self.highlight.position is not None and min(self.cursor.position, self.highlight.position) <=
-                          position < max(self.cursor.position, self.highlight.position))
-        y_location = self.margin[1] + line * (self.font.height + self.spacing[1])
-
-        surface = p.Surface((self.font.glyphs[char] + self.spacing[0], self.font.height + self.spacing[1]))
-        surface.fill(self.highlightForeground)
-
-        if settings.smoothHighlight:
-            self.textEffects[position].highlight = (min(255, self.textEffects[position].highlight +
-                                                       settings.highlightFadeIn) if highlighted else
-                                                    max(0, self.textEffects[position].highlight -
-                                                        settings.highlightFadeIn))
-            surface.set_alpha(self.textEffects[position].highlight)
-            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
-        elif highlighted:
-            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
-        super().display_char(char, line, pointer, position)
-
-    def display_text(self):
-        super().display_text()
-        if self.highlight.position == self.cursor.position:
-            self.highlight.position = None
-        if self.highlight.position is None:
-            self.cursor.refresh(self)
-
-    def refresh(self, parent, event):
-        self.action.refresh(self, event)
-        super().refresh(parent, event)
-
-        if self.valid_mouse_position(event.mousePosition):
-            p.mouse.set_cursor(p.SYSTEM_CURSOR_IBEAM)
 
     def get_location(self, **kwargs):
         name, value = list(kwargs.items())[0]
@@ -179,6 +124,96 @@ class TextEditor(TextDisplay):
                     return value - total + len(j) + 1, i
             return self.get_coordinate(position = len(self.text))
         return None
+
+
+class FancyDisplay(StaticDisplay):
+    def __init__(self, text = "", position = (0, 0), size = (400, 300),
+                 background = palette.dark0, foreground = palette.white,
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+        super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
+        self.textEffects = []
+
+    def write(self, text):
+        if len(self.textEffects) > len(text):
+            self.textEffects = self.textEffects[:len(text)]
+        else:
+            for _ in range(len(text) - len(self.textEffects)):
+                self.textEffects.append(TextEffect())
+        self.text = text
+
+    def display_char(self, char, line, pointer, position):
+        if settings.smoothText:
+            self.textEffects[position].opacity = min(255, self.textEffects[position].opacity + settings.textFadeIn)
+
+        if char != '\n':
+            colour = self.foreground if self.textEffects[position].colour is None else self.textEffects[position].colour
+            surface = self.font.render(char, colour)
+            if settings.smoothText:
+                surface.set_alpha(self.textEffects[position].opacity)
+            self.display(surface, (pointer - self.offset[0],
+                                   self.margin[1] + line * (self.font.height + self.spacing[1]) - self.offset[1]))
+
+
+class TextDisplay(FancyDisplay):
+    def __init__(self, text = "", position = (0, 0), size = (400, 300),
+                 background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+        super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
+        from script.textEngine.keymap import view_keymap
+        self.action = ViewAction(view_keymap)
+        self.cursor = Cursor()
+        self.highlight = Cursor()
+        self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
+
+    def display_char(self, char, line, pointer, position):
+        highlighted = int(self.highlight.position is not None and min(self.cursor.position, self.highlight.position) <=
+                          position < max(self.cursor.position, self.highlight.position))
+        y_location = self.margin[1] + line * (self.font.height + self.spacing[1])
+
+        surface = p.Surface((self.font.glyphs[char] + self.spacing[0], self.font.height + self.spacing[1]))
+        surface.fill(self.highlightForeground)
+
+        if settings.smoothHighlight:
+            self.textEffects[position].highlight = (min(255, self.textEffects[position].highlight +
+                                                        settings.highlightFadeIn) if highlighted else
+                                                    max(0, self.textEffects[position].highlight -
+                                                        settings.highlightFadeIn))
+            surface.set_alpha(self.textEffects[position].highlight)
+            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
+        elif highlighted:
+            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
+        super().display_char(char, line, pointer, position)
+
+    def refresh(self, parent, event):
+        self.action.refresh(self, event)
+        super().refresh(parent, event)
+
+
+
+class TextEditor(TextDisplay):
+    def __init__(self, text = "", position = (0, 0), size = (400, 300),
+                 background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+        super().__init__(text, position, size, background, foreground, highlight_foreground,
+                         font, font_size, margin, spacing)
+        from script.textEngine.keymap import edit_keymap
+        self.action = EditAction(edit_keymap)
+        self.cursor.position = 0
+
+    def display_char(self, char, line, pointer, position):
+        super().display_char(char, line, pointer, position)
+
+    def display_text(self):
+        super().display_text()
+        if self.highlight.position == self.cursor.position:
+            self.highlight.position = None
+        if self.highlight.position is None:
+            self.cursor.refresh(self)
+
+    def refresh(self, parent, event):
+        super().refresh(parent, event)
+        if self.valid_mouse_position(event.mousePosition):
+            p.mouse.set_cursor(p.SYSTEM_CURSOR_IBEAM)
 
     def append(self, text):
         if self.highlight.position is None:
