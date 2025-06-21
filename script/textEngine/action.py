@@ -34,35 +34,15 @@ class ViewAction:
         else:
             parent.append(key)
 
-    def refresh(self, parent, event):
-        self.modifier = get_modifier(event.key)
-
-        for i in event.key_down():
-            if i in self.keyboard.map.keys():
-                self.keyPressed = i
-                self.press(parent)
-                self.keyCooldown = 30
-                p.mouse.set_visible(False)
-
-        if event.key_up(self.keyPressed):
-            self.keyPressed = None
-
-        if event.mouse_down():
-            if parent.valid_mouse_position(event.mousePosition):
-                coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
-                self.mouseDown = True
-                parent.cursor.position = parent.get_position(coordinate = coordinate)
+    def refresh_mouse(self, parent, event):
+        if event.mouse_down() and parent.valid_mouse_position(event.mousePosition):
+            event.active = parent
+            coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
+            self.mouseDown = True
+            parent.cursor.position = parent.get_position(coordinate = coordinate)
 
         if event.mouse_up():
             self.mouseDown = False
-
-        if self.keyPressed is not None:
-            parent.cursor.blink = 0
-            if self.keyCooldown > 0:
-                self.keyCooldown -= 1
-            else:
-                self.press(parent)
-                self.keyCooldown = 3
 
         if self.mouseDown:
             position = parent.get_position(location = event.mousePosition, absolute = True)
@@ -71,14 +51,7 @@ class ViewAction:
             else:
                 parent.highlight.position = None
 
-
-class EditAction(ViewAction):
-    def __init__(self, keyboard):
-        super().__init__(keyboard)
-
-    def refresh(self, parent, event):
-        self.modifier = get_modifier(event.key)
-
+    def refresh_key(self, parent, event):
         for i in event.key_down():
             if i in self.keyboard.map.keys():
                 self.keyPressed = i
@@ -89,21 +62,6 @@ class EditAction(ViewAction):
         if event.key_up(self.keyPressed):
             self.keyPressed = None
 
-        if event.mouse_down():
-            if parent.valid_mouse_position(event.mousePosition):
-                coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
-                self.mouseDown = True
-                if self.modifier == "shift":
-                    if parent.highlight.position is None:
-                        parent.highlight.position = parent.cursor.position
-                else:
-                    parent.cursor.blink = 0
-                    parent.highlight.position = None
-                parent.cursor.position = parent.get_position(coordinate = coordinate)
-
-        if event.mouse_up():
-            self.mouseDown = False
-
         if self.keyPressed is not None:
             parent.cursor.blink = 0
             if self.keyCooldown > 0:
@@ -111,6 +69,34 @@ class EditAction(ViewAction):
             else:
                 self.press(parent)
                 self.keyCooldown = 3
+
+    def refresh(self, parent, event):
+        self.modifier = get_modifier(event.key)
+        self.refresh_mouse(parent, event)
+        if event.active is not parent:
+            return
+        self.refresh_key(parent, event)
+
+
+class EditAction(ViewAction):
+    def __init__(self, keyboard):
+        super().__init__(keyboard)
+
+    def refresh_mouse(self, parent, event):
+        if event.mouse_down() and parent.valid_mouse_position(event.mousePosition):
+            event.active = parent
+            coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
+            self.mouseDown = True
+            if self.modifier == "shift":
+                if parent.highlight.position is None:
+                    parent.highlight.position = parent.cursor.position
+            else:
+                parent.cursor.blink = 0
+                parent.highlight.position = None
+            parent.cursor.position = parent.get_position(coordinate = coordinate)
+
+        if event.mouse_up():
+            self.mouseDown = False
 
         if self.mouseDown:
             position = parent.get_position(location = event.mousePosition, absolute = True)

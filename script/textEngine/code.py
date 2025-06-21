@@ -15,31 +15,26 @@ class CodeEditor(TextEditor):
         from script.textEngine.keymap import code_keymap
         self.action = EditAction(code_keymap)
 
-        self.syntax = ""
         self.output = ""
         self.outputChannel = output_channel
 
-    def display_char(self, char, line, pointer, position):
-        super().display_char(char, line, pointer, position)
-
-    def display_text(self):
-        #self.highlight_syntax()
-        super().display_text()
+    def display_text(self, event):
+        self.highlight_syntax()
+        super().display_text(event)
 
     def highlight_syntax(self):
-        self.syntax = ""
         string = None
-        for i in self.text:
+        for i, e in zip(self.text, self.textEffects):
             if string is None:
                 if i in ('"', "'"):
                     string = i
-                    self.syntax += 's'
+                    e.colour = palette.green
                 else:
-                    self.syntax += ' '
+                    e.colour = None
             else:
                 if i == string:
                     string = None
-                self.syntax += 's'
+                e.colour = palette.green
 
     def run(self):
         self.output = "/Users/dummy/Documents/untitled.py\n"

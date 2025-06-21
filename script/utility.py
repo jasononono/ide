@@ -7,6 +7,7 @@ class Event:
         self.key = None
         self.mouse = None
         self.mousePosition = None
+        self.active = None
         self.refresh()
 
     def refresh(self):
@@ -22,11 +23,7 @@ class Event:
         return None
 
     def detect_all(self, event):
-        events = []
-        for e in self.event:
-            if e.type == event:
-                events.append(e)
-        return events
+        return [e for e in self.event if e.type == event]
 
     def key_down(self, key = None):
         event = self.detect_all(p.KEYDOWN)

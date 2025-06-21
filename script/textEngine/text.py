@@ -37,7 +37,7 @@ class StaticDisplay(Object):
         self.rect.refresh(parent.rect)
 
         self.surface.fill(self.background)
-        self.display_text()
+        self.display_text(event)
         parent.display(self.surface, self.rect)
 
     def write(self, text):
@@ -49,7 +49,7 @@ class StaticDisplay(Object):
             self.display(surface, (pointer - self.offset[0],
                                    self.margin[1] + line * (self.font.height + self.spacing[1]) - self.offset[1]))
 
-    def display_text(self):
+    def display_text(self, event):
         self.map = [[]]
         self.charMap = [[]]
         pointer = self.margin[0]
@@ -187,7 +187,14 @@ class TextDisplay(FancyDisplay):
 
     def refresh(self, parent, event):
         self.action.refresh(self, event)
+        if event.active is self:
+            parent.draw_rect(palette.white,
+                             (self.rect.x - 1, self.rect.y - 1, self.rect.width + 2, self.rect.height + 2))
         super().refresh(parent, event)
+
+    def select_all(self):
+        self.highlight.position = 0
+        self.cursor.position = len(self.text)
 
 
 class TextEditor(TextDisplay):
@@ -203,11 +210,11 @@ class TextEditor(TextDisplay):
     def display_char(self, char, line, pointer, position):
         super().display_char(char, line, pointer, position)
 
-    def display_text(self):
-        super().display_text()
+    def display_text(self, event):
+        super().display_text(event)
         if self.highlight.position == self.cursor.position:
             self.highlight.position = None
-        if self.highlight.position is None:
+        if event.active is self and self.highlight.position is None:
             self.cursor.refresh(self)
 
     def refresh(self, parent, event):
@@ -326,10 +333,6 @@ class TextEditor(TextDisplay):
 
     def indent(self):
         self.append("    ")
-
-    def select_all(self):
-        self.highlight.position = 0
-        self.cursor.position = len(self.text)
 
     def copy(self):
         if self.highlight.position is not None:

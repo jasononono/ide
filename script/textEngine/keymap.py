@@ -1,6 +1,6 @@
 import pygame as p
 
-from script.textEngine.text import TextEditor
+from script.textEngine.text import TextDisplay, TextEditor
 from script.textEngine.code import CodeEditor
 
 
@@ -30,6 +30,7 @@ class Keymap:
 
 
 view_keymap = Keymap()
+view_keymap.assign(p.K_a, ctrl = TextDisplay.select_all)
 
 
 edit_keymap = Keymap()
@@ -73,7 +74,7 @@ edit_keymap.assign(p.K_u, 'u', 'U')
 edit_keymap.assign(p.K_i, 'i', 'I')
 edit_keymap.assign(p.K_o, 'o', 'O')
 edit_keymap.assign(p.K_p, 'p', 'P')
-edit_keymap.assign(p.K_a, 'a', 'A', TextEditor.select_all)
+edit_keymap.assign(p.K_a, 'a', 'A', TextDisplay.select_all)
 edit_keymap.assign(p.K_s, 's', 'S')
 edit_keymap.assign(p.K_d, 'd', 'D')
 edit_keymap.assign(p.K_f, 'f', 'F')
