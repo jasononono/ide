@@ -73,6 +73,14 @@ class CodeEditor(TextEditor):
                         if self.text[i] == string:
                             break
                         i += 1
+                elif self.text[i] == '#':
+                    self.textEffects[i].colour = palette.grey
+                    i += 1
+                    while i < len(self.text):
+                        self.textEffects[i].colour = palette.grey
+                        if self.text[i] == '\n':
+                            break
+                        i += 1
             i += 1
         self.highlight_token(token_start, token, next_token)
 
