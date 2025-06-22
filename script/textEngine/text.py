@@ -43,6 +43,12 @@ class StaticDisplay(Object):
     def write(self, text):
         self.text = text
 
+    def append(self, text):
+        self.text += text
+
+    def erase(self):
+        self.text = ""
+
     def display_char(self, char, line, pointer, position):
         if char != '\n':
             surface = self.font.render(char, self.foreground)
@@ -131,16 +137,29 @@ class FancyDisplay(StaticDisplay):
                  background = palette.dark0, foreground = palette.white,
                  font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
         super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
+        self.text = text
         self.textEffects = []
-        self.write(text)
+        self.resize_effects()
+
+    def resize_effects(self):
+        if len(self.textEffects) < len(self.text):
+            for i in range(len(self.text) - len(self.textEffects)):
+                self.textEffects.append(TextEffect())
+
+    def append(self, text, colour = None):
+        old_length = len(self.text)
+        self.text += text
+        self.resize_effects()
+        for i in range(old_length, old_length + len(text)):
+            self.textEffects[i].colour = colour
 
     def write(self, text):
-        if len(self.textEffects) > len(text):
-            self.textEffects = self.textEffects[:len(text)]
-        else:
-            for _ in range(len(text) - len(self.textEffects)):
-                self.textEffects.append(TextEffect())
         self.text = text
+        self.resize_effects()
+
+    def erase(self):
+        self.text = ""
+        self.resize_effects()
 
     def display_char(self, char, line, pointer, position):
         if settings.smoothText:
@@ -166,6 +185,16 @@ class TextDisplay(FancyDisplay):
         self.highlight = Cursor()
         self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
 
+    def write(self, text):
+        super().write(text)
+        self.cursor.position = None
+        self.highlight.position = None
+
+    def erase(self):
+        super().erase()
+        self.cursor.position = None
+        self.highlight.position = None
+
     def display_char(self, char, line, pointer, position):
         highlighted = int(self.highlight.position is not None and min(self.cursor.position, self.highlight.position) <=
                           position < max(self.cursor.position, self.highlight.position))
@@ -188,7 +217,7 @@ class TextDisplay(FancyDisplay):
     def refresh(self, parent, event):
         self.action.refresh(self, event)
         if event.active is self:
-            parent.draw_rect(palette.white,
+            parent.draw_rect(palette.dark3,
                              (self.rect.x - 1, self.rect.y - 1, self.rect.width + 2, self.rect.height + 2))
         super().refresh(parent, event)
 
@@ -207,9 +236,6 @@ class TextEditor(TextDisplay):
         self.action = EditAction(edit_keymap)
         self.cursor.position = 0
 
-    def display_char(self, char, line, pointer, position):
-        super().display_char(char, line, pointer, position)
-
     def display_text(self, event):
         super().display_text(event)
         if self.highlight.position == self.cursor.position:
@@ -222,33 +248,38 @@ class TextEditor(TextDisplay):
         if self.valid_mouse_position(event.mousePosition):
             p.mouse.set_cursor(p.SYSTEM_CURSOR_IBEAM)
 
-    def append(self, text):
+    def insert(self, text):
+        self.text = self.text[:self.cursor.position] + text + self.text[self.cursor.position:]
+
+        for i in range(self.cursor.position, self.cursor.position + len(text)):
+            if len(self.textEffects) <= len(self.text):
+                self.textEffects.insert(i, TextEffect())
+            else:
+                self.textEffects[i] = TextEffect()
+        self.cursor.position += len(text)
+
+    def append(self, text, colour = None):
         if self.highlight.position is None:
             self.text = self.text[:self.cursor.position] + text + self.text[self.cursor.position:]
+
             for i in range(self.cursor.position, self.cursor.position + len(text)):
-                self.textEffects.append(TextEffect())
+                if len(self.textEffects) <= len(self.text):
+                    self.textEffects.insert(i, TextEffect())
+                else:
+                    self.textEffects[i] = TextEffect()
                 if settings.smoothText:
                     self.textEffects[i].opacity = 0
+                self.textEffects[i].colour = colour
             self.cursor.position += len(text)
 
         else:
-            start = min(self.cursor.position, self.highlight.position)
-            self.text = (self.text[:start] + text + self.text[max(self.cursor.position, self.highlight.position):])
-            for i in range(start, start + len(text)):
-                self.textEffects.append(TextEffect())
-                if settings.smoothText:
-                    self.textEffects[i].opacity = 0
-            self.cursor.position = start + len(text)
-            self.cursor.location = None
-            self.highlight.position = None
+            self.delete()
+            self.insert(text)
 
     def delete(self):
         if self.highlight.position is not None:
             start = min(self.cursor.position, self.highlight.position)
             self.text = (self.text[:start] + self.text[max(self.cursor.position, self.highlight.position):])
-            if settings.smoothHighlight:
-                for i in range(start, start + abs(self.highlight.position - self.cursor.position)):
-                    self.textEffects[i].highlight = 0
             self.cursor.position = start
             self.cursor.location = None
             self.highlight.position = None
