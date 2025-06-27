@@ -38,7 +38,7 @@ class CodeEditor(TextEditor):
         if not token or token.isspace():
             return None
         for i in range(len(token)):
-            if next_token == "def":
+            if next_token in ("def", "class"):
                 self.textEffects[index + i].colour = palette.blue
             if token in self.keywords:
                 self.textEffects[index + i].colour = palette.orange
@@ -46,6 +46,8 @@ class CodeEditor(TextEditor):
                 self.textEffects[index + i].colour = palette.purple
         if token == "def":
             return "def"
+        if token == "class":
+            return "class"
         return None
 
     def highlight_syntax(self):
