@@ -21,6 +21,7 @@ class ViewAction:
     def __init__(self, keyboard):
         self.keyboard = keyboard
         self.keyPressed = None
+        self.refreshScroll = False
         self.keyCooldown = 0
         self.modifier = None
         self.mouseDown = False
@@ -33,6 +34,7 @@ class ViewAction:
             key(parent)
         else:
             parent.append(key)
+        self.refreshScroll = True
 
     def refresh_mouse(self, parent, event):
         if parent.scrolling:
@@ -42,6 +44,7 @@ class ViewAction:
             coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
             self.mouseDown = True
             parent.cursor.position = parent.get_position(coordinate = coordinate)
+            self.refreshScroll = True
 
         if event.mouse_up():
             self.mouseDown = False
@@ -52,6 +55,7 @@ class ViewAction:
                 parent.highlight.position = position
             else:
                 parent.highlight.position = None
+            self.refreshScroll = True
 
     def refresh_key(self, parent, event):
         for i in event.key_down():
@@ -64,7 +68,7 @@ class ViewAction:
         if event.key_up(self.keyPressed):
             self.keyPressed = None
 
-        if self.keyPressed is not None:
+        if self.keyPressed:
             parent.cursor.blink = 0
             if self.keyCooldown > 0:
                 self.keyCooldown -= 1
@@ -73,6 +77,7 @@ class ViewAction:
                 self.keyCooldown = 3
 
     def refresh(self, parent, event):
+        self.refreshScroll = False
         self.modifier = get_modifier(event.key)
         self.refresh_mouse(parent, event)
         if event.active is not parent:
@@ -98,6 +103,7 @@ class EditAction(ViewAction):
                 parent.cursor.blink = 0
                 parent.highlight.position = None
             parent.cursor.position = parent.get_position(coordinate = coordinate)
+            self.refreshScroll = True
 
         if event.mouse_up():
             self.mouseDown = False
@@ -112,3 +118,4 @@ class EditAction(ViewAction):
                 parent.cursor.position = position
                 parent.cursor.location = None
                 parent.cursor.blink = 0
+            self.refreshScroll = True

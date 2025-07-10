@@ -33,8 +33,10 @@ class Scroll(Object):
         if self.pressed:
             event.cursor = p.SYSTEM_CURSOR_ARROW
             self.surface.set_alpha(200)
-            percent = (event.mousePosition[self.side] - parent.rect.abs.topleft[self.side] - self.location) / (parent.rect.size[self.side] - size[self.side])
-            parent.offset[self.side] = max(0, min(1, percent)) * (parent.realSize[self.side] - parent.rect.size[self.side])
+            percent = ((event.mousePosition[self.side] - parent.rect.abs.topleft[self.side] - self.location) /
+                       (parent.rect.size[self.side] - size[self.side]))
+            parent.offset[self.side] = (max(0, min(1, percent)) *
+                                        (parent.realSize[self.side] - parent.rect.size[self.side]))
         elif self.valid_mouse_position(event.mousePosition):
             event.cursor = p.SYSTEM_CURSOR_ARROW
             self.surface.set_alpha(150)

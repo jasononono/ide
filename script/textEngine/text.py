@@ -54,21 +54,25 @@ class StaticDisplay(Object):
     def erase(self):
         self.text = ""
 
+    def get_line(self, line):
+        return self.margin[1] + line * (self.font.height + self.spacing[1])
+
     def display_char(self, char, line, pointer, position):
         if char != '\n':
             surface = self.font.render(char, self.foreground)
-            self.display(surface, (pointer - self.offset[0],
-                                   self.margin[1] + line * (self.font.height + self.spacing[1]) - self.offset[1]))
+            self.display(surface, (pointer - self.offset[0], self.get_line(line) - self.offset[1]))
 
     def display_text(self, event):
         self.map = [[]]
         self.charMap = [[]]
+        self.charMax = [0, 0]
         pointer = self.margin[0]
         line = 0
 
         for n, i in enumerate(self.text):
             self.display_char(i, line, pointer, n)
             if i == '\n':
+                self.charMax[0] = max(self.charMax[0], (self.map[-1][-1] if len(self.map[-1]) > 0 else 0))
                 self.map.append([])
                 self.charMap.append([])
                 pointer = self.margin[0]
@@ -77,6 +81,9 @@ class StaticDisplay(Object):
                 pointer += self.font.glyphs[i] + self.spacing[0]
                 self.map[line].append(pointer)
                 self.charMap[line].append(i)
+
+        self.charMax[0] = self.margin[0] + max(self.charMax[0], self.map[-1][-1] if len(self.map[-1]) > 0 else 0)
+        self.charMax[1] = self.get_line(line + 1) + self.margin[1]
 
     def get_location(self, **kwargs):
         name, value = list(kwargs.items())[0]
@@ -91,8 +98,11 @@ class StaticDisplay(Object):
     def get_position(self, **kwargs):
         name, value = list(kwargs.items())[0]
         absolute = True if "absolute" in kwargs.keys() and kwargs["absolute"] is True else False
+        offset = False if "offset" in kwargs.keys() and kwargs["offset"] is False else True
+        
         if name == "location":
-            return self.get_position(coordinate = self.get_coordinate(location = value, absolute = absolute))
+            return self.get_position(coordinate = self.get_coordinate(location = value,
+                                                                      absolute = absolute, offset = offset))
 
         if name == "coordinate":
             column = max(value[0], 0)
@@ -104,9 +114,11 @@ class StaticDisplay(Object):
     def get_coordinate(self, **kwargs):
         name, value = list(kwargs.items())[0]
         absolute = True if "absolute" in kwargs.keys() and kwargs["absolute"] is True else False
+        offset = False if "offset" in kwargs.keys() and kwargs["offset"] is False else True
+        
         if name == "location":
-            row = ((value[1] + self.offset[1] - self.margin[1] - (self.rect.abs.y if absolute else 0)) /
-                   (self.spacing[1] + self.font.height))
+            row = ((value[1] + (self.offset[1] if offset else 0) - self.margin[1] -
+                    (self.rect.abs.y if absolute else 0)) / (self.spacing[1] + self.font.height))
             row = int(max(min(row, len(self.map) - 1), 0))
 
             if len(self.charMap[row]) == 0:
@@ -116,7 +128,8 @@ class StaticDisplay(Object):
             for i in range(len(self.charMap[row])):
                 pointer += (0 if i == 0 else self.font.glyphs[self.charMap[row][i - 1]] / 2 + self.spacing[0])
                 pointer += self.font.glyphs[self.charMap[row][i]] / 2
-                if value[0] + self.offset[0] - self.margin[0] - (self.rect.abs.x if absolute else 0) < pointer:
+                if (value[0] + (self.offset[0] if offset else 0) - self.margin[0] -
+                    (self.rect.abs.x if absolute else 0) < pointer):
                     column = i
                     break
 
@@ -237,8 +250,21 @@ class TextDisplay(FancyDisplay):
             parent.draw_rect(palette.dark3,
                              (self.rect.x - 1, self.rect.y - 1, self.rect.width + 2, self.rect.height + 2))
 
+    def fit_screen(self):
+        target_location = (self.cursor.targetLocation[0], self.cursor.targetLocation[1] + self.font.height)
+
+        for i in range(2):
+            if target_location[i] >= self.offset[i] + self.rect.size[i] - 10:
+                self.offset[i] = target_location[i] - self.rect.size[i] + 10
+            elif target_location[i] <= self.offset[i] + 10:
+                self.offset[i] = target_location[i] - 10
+
     def refresh(self, parent, event):
         super().refresh(parent, event)
+        self.realSize = self.charMax
+        if self.action.refreshScroll and self.cursor.location is not None:
+            self.fit_screen()
+
         self.action.refresh(self, event)
 
     def select_all(self):
@@ -267,7 +293,6 @@ class TextEditor(TextDisplay):
         if event.active is self and self.valid_mouse_position(event.mousePosition):
             event.cursor = p.SYSTEM_CURSOR_IBEAM
         super().refresh(parent, event)
-        self.realSize = [max(i, 200) for i in self.rect.size]
 
     def insert(self, text):
         self.text = self.text[:self.cursor.position] + text + self.text[self.cursor.position:]
@@ -335,7 +360,8 @@ class TextEditor(TextDisplay):
         location = self.get_location(coordinate = (column, row))
         self.cursor.position = (len(self.text) if row == len(self.map) - 1 else
                                 self.get_position(location = (location[0],
-                                                              location[1] + self.font.height + self.spacing[1])))
+                                                              location[1] + self.font.height + self.spacing[1]),
+                                                  offset = False))
         self.cursor.blink = 0
 
     def cursor_up(self):
@@ -346,7 +372,8 @@ class TextEditor(TextDisplay):
         location = self.get_location(coordinate = (column, row))
         self.cursor.position = (0 if row == 0 else
                                 self.get_position(location = (location[0],
-                                                              location[1] - self.font.height - self.spacing[1])))
+                                                              location[1] - self.font.height - self.spacing[1]),
+                                                  offset = False))
         self.cursor.blink = 0
 
     def highlight_left(self):

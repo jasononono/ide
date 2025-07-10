@@ -35,5 +35,5 @@ class Screen(Object):
         self.text.refresh(self, self.event)
         self.output.refresh(self, self.event)
 
-        if self.testButton.refresh(self, self.event):
-            print("esr")
+        # if self.testButton.refresh(self, self.event):
+        #     print("esr")
