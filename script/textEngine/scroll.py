@@ -15,13 +15,17 @@ class Scroll(Object):
         self.location = 0
 
     def refresh(self, parent, event):
-        if not parent.realSize:
+        if not parent.realSize or parent.rect.size[self.side] >= parent.realSize[self.side]:
             return False
-        size = (parent.rect.size[0] ** 2 / parent.realSize[0], self.width)
 
-        self.rect.top = self.position[1]
-        self.rect.left = (self.position[0] + parent.offset[0] / (parent.realSize[0] - parent.rect.size[0]) *
-                                             (parent.rect.size[0] - size[0]))
+        length = parent.rect.size[self.side] ** 2 / parent.realSize[self.side]
+        size = (self.width, length) if self.side else (length, self.width)
+
+        position = (self.position[self.side] + parent.offset[self.side] /
+                    (parent.realSize[self.side] - parent.rect.size[self.side]) *
+                    (parent.rect.size[self.side] - size[self.side]))
+        self.rect.topleft = (self.position[0], position) if self.side else (position, self.position[1])
+
         self.resize(size)
         self.fill(palette.white)
         self.rect.refresh(parent.rect)
@@ -29,14 +33,14 @@ class Scroll(Object):
         if self.pressed:
             event.cursor = p.SYSTEM_CURSOR_ARROW
             self.surface.set_alpha(200)
-            percent = (event.mousePosition[0] - parent.rect.abs.left - self.location) / (parent.rect.size[0] - size[0])
-            parent.offset[0] = max(0, min(1, percent)) * (parent.realSize[0] - parent.rect.size[0])
+            percent = (event.mousePosition[self.side] - parent.rect.abs.topleft[self.side] - self.location) / (parent.rect.size[self.side] - size[self.side])
+            parent.offset[self.side] = max(0, min(1, percent)) * (parent.realSize[self.side] - parent.rect.size[self.side])
         elif self.valid_mouse_position(event.mousePosition):
             event.cursor = p.SYSTEM_CURSOR_ARROW
             self.surface.set_alpha(150)
             if event.mouse_down():
                 self.pressed = True
-                self.location = event.mousePosition[0] - self.rect.abs.left
+                self.location = event.mousePosition[self.side] - self.rect.abs.topleft[self.side]
         else:
             self.surface.set_alpha(100)
         if event.mouse_up():

@@ -33,6 +33,7 @@ class StaticDisplay(Object):
 
         self.map = []
         self.charMap = []
+        self.charMax = [0, 0]
 
     def update(self, parent, event):
         self.display_text(event)
@@ -146,7 +147,8 @@ class FancyDisplay(StaticDisplay):
         self.realSize = real_size
         self.resize_effects()
 
-        self.scroll = Scroll(self, (0, 0), 0)
+        self.scrollx = Scroll(self, (0, self.rect.height - 7), 0)
+        self.scrolly = Scroll(self, (self.rect.width - 7, 0), 1)
         self.scrolling = False
 
     def resize_effects(self):
@@ -156,7 +158,8 @@ class FancyDisplay(StaticDisplay):
 
     def update(self, parent, event):
         super().update(parent, event)
-        self.scrolling = self.scroll.refresh(self, event)
+        self.scrolling = self.scrollx.refresh(self, event)
+        self.scrolling = self.scrolly.refresh(self, event) or self.scrolling
 
     def append(self, text, colour = None):
         old_length = len(self.text)
@@ -264,7 +267,7 @@ class TextEditor(TextDisplay):
         if event.active is self and self.valid_mouse_position(event.mousePosition):
             event.cursor = p.SYSTEM_CURSOR_IBEAM
         super().refresh(parent, event)
-        self.realSize = [max(i, 1160) for i in self.rect.size]
+        self.realSize = [max(i, 200) for i in self.rect.size]
 
     def insert(self, text):
         self.text = self.text[:self.cursor.position] + text + self.text[self.cursor.position:]
