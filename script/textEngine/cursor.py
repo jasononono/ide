@@ -10,7 +10,7 @@ class Cursor:
         self.blinkRate = settings.cursorBlinkRate
         self.blink = 0
         self.colour = palette.white
-        self.surface = p.Surface((1, 1))
+        self.surface = p.Surface((0, 0))
 
     def refresh(self, parent):
         self.blink = (self.blink + 1) % (self.blinkRate * 2)
@@ -28,11 +28,11 @@ class Cursor:
             tick = self.blink / self.blinkRate
             alpha = (tick - int(tick)) if int(tick) % 2 else int(tick) - tick + 1
             self.surface.set_alpha(round(255 * max(0.0, min(1.0, 2 * alpha ** 2))))
-            parent.display(self.surface, self.location)
+            self.display(parent)
         elif self.blink < self.blinkRate:
-            parent.display(self.surface, self.location)
+            self.display(parent)
 
-
-
+    def display(self, parent):
+        parent.display(self.surface, [self.location[i] - parent.offset[i] for i in range(2)])
 
 

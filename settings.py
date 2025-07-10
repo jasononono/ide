@@ -1,5 +1,8 @@
 version = "0.4.3"
 
+""" DISPLAY """
+highlightOpacity = 150
+
 """ ANIMATIONS """
 smoothCursor = True
 cursorAnimation = True

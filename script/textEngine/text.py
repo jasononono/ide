@@ -7,6 +7,7 @@ from assets import palette
 from script.textEngine.font import Font
 from script.textEngine.cursor import Cursor
 from script.textEngine.action import ViewAction, EditAction
+from script.textEngine.scroll import Scroll
 
 
 class TextEffect:
@@ -19,7 +20,7 @@ class TextEffect:
 class StaticDisplay(Object):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white,
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0), offset = None):
         super().__init__(position, size, True)
         self.text = text
         self.background = background
@@ -28,16 +29,19 @@ class StaticDisplay(Object):
         self.font = Font(font_size, font)
         self.margin = margin
         self.spacing = spacing
-        self.offset = [0, 0]
+        self.offset = offset or [0, 0]
 
         self.map = []
         self.charMap = []
+
+    def update(self, parent, event):
+        self.display_text(event)
 
     def refresh(self, parent, event):
         self.rect.refresh(parent.rect)
 
         self.surface.fill(self.background)
-        self.display_text(event)
+        self.update(parent, event)
         parent.display(self.surface, self.rect)
 
     def write(self, text):
@@ -135,16 +139,24 @@ class StaticDisplay(Object):
 class FancyDisplay(StaticDisplay):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white,
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
-        super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0), real_size = None, offset = None):
+        super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing, offset)
         self.text = text
         self.textEffects = []
+        self.realSize = real_size
         self.resize_effects()
+
+        self.scroll = Scroll(self, (0, 0), 0)
+        self.scrolling = False
 
     def resize_effects(self):
         if len(self.textEffects) < len(self.text):
             for i in range(len(self.text) - len(self.textEffects)):
                 self.textEffects.append(TextEffect())
+
+    def update(self, parent, event):
+        super().update(parent, event)
+        self.scrolling = self.scroll.refresh(self, event)
 
     def append(self, text, colour = None):
         old_length = len(self.text)
@@ -177,8 +189,10 @@ class FancyDisplay(StaticDisplay):
 class TextDisplay(FancyDisplay):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
-        super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing)
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0),
+                 real_size = None, offset = None):
+        super().__init__(text, position, size, background, foreground, font, font_size, margin, spacing, real_size,
+                         offset)
         from script.textEngine.keymap import view_keymap
         self.action = ViewAction(view_keymap)
         self.cursor = Cursor()
@@ -204,22 +218,25 @@ class TextDisplay(FancyDisplay):
         surface.fill(self.highlightForeground)
 
         if settings.smoothHighlight:
-            self.textEffects[position].highlight = (min(255, self.textEffects[position].highlight +
-                                                        settings.highlightFadeIn) if highlighted else
-                                                    max(0, self.textEffects[position].highlight -
-                                                        settings.highlightFadeIn))
+            self.textEffects[position].highlight = (min(settings.highlightOpacity,
+                                                        self.textEffects[position].highlight + settings.highlightFadeIn)
+                                                    if highlighted else max(0, self.textEffects[position].highlight -
+                                                                               settings.highlightFadeIn))
             surface.set_alpha(self.textEffects[position].highlight)
             self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
         elif highlighted:
             self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
         super().display_char(char, line, pointer, position)
 
-    def refresh(self, parent, event):
-        self.action.refresh(self, event)
+    def update(self, parent, event):
+        super().update(parent, event)
         if event.active is self:
             parent.draw_rect(palette.dark3,
                              (self.rect.x - 1, self.rect.y - 1, self.rect.width + 2, self.rect.height + 2))
+
+    def refresh(self, parent, event):
         super().refresh(parent, event)
+        self.action.refresh(self, event)
 
     def select_all(self):
         self.highlight.position = 0
@@ -229,9 +246,9 @@ class TextDisplay(FancyDisplay):
 class TextEditor(TextDisplay):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0)):
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0), real_size = None, offset = None):
         super().__init__(text, position, size, background, foreground, highlight_foreground,
-                         font, font_size, margin, spacing)
+                         font, font_size, margin, spacing, real_size, offset)
         from script.textEngine.keymap import edit_keymap
         self.action = EditAction(edit_keymap)
         self.cursor.position = 0
@@ -244,9 +261,10 @@ class TextEditor(TextDisplay):
             self.cursor.refresh(self)
 
     def refresh(self, parent, event):
+        if event.active is self and self.valid_mouse_position(event.mousePosition):
+            event.cursor = p.SYSTEM_CURSOR_IBEAM
         super().refresh(parent, event)
-        if self.valid_mouse_position(event.mousePosition):
-            p.mouse.set_cursor(p.SYSTEM_CURSOR_IBEAM)
+        self.realSize = [max(i, 1160) for i in self.rect.size]
 
     def insert(self, text):
         self.text = self.text[:self.cursor.position] + text + self.text[self.cursor.position:]

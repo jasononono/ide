@@ -8,6 +8,7 @@ class Event:
         self.mouse = None
         self.mousePosition = None
         self.active = None
+        self.cursor = p.SYSTEM_CURSOR_ARROW
         self.refresh()
 
     def refresh(self):
@@ -15,6 +16,7 @@ class Event:
         self.key = p.key.get_pressed()
         self.mouse = p.mouse.get_pressed()
         self.mousePosition = p.mouse.get_pos()
+        p.mouse.set_cursor(self.cursor)
 
     def detect(self, event):
         for e in self.event:
@@ -61,9 +63,13 @@ class Rect(p.Rect):
 
 
 class Object:
-    def __init__(self, position, size, alpha = False):
+    def __init__(self, position = (0, 0), size = (0, 0), alpha = False):
         self.surface = p.Surface(size, p.SRCALPHA) if alpha else p.Surface(size)
         self.rect = Rect(position, size)
+
+    def resize(self, size = (0, 0)):
+        self.surface = p.transform.scale(self.surface, size)
+        self.rect.size = size
 
     def display(self, surface, position = (0, 0)):
         self.surface.blit(surface, position)

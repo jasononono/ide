@@ -1,7 +1,7 @@
 import pygame as p
 
 from script.textEngine.text import TextDisplay, TextEditor
-from script.textEngine.code import CodeEditor
+from script.code import CodeEditor
 
 
 class Key:

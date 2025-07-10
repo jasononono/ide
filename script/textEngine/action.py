@@ -35,6 +35,8 @@ class ViewAction:
             parent.append(key)
 
     def refresh_mouse(self, parent, event):
+        if parent.scrolling:
+            return
         if event.mouse_down() and parent.valid_mouse_position(event.mousePosition):
             event.active = parent
             coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)
@@ -83,6 +85,8 @@ class EditAction(ViewAction):
         super().__init__(keyboard)
 
     def refresh_mouse(self, parent, event):
+        if parent.scrolling:
+            return
         if event.mouse_down() and parent.valid_mouse_position(event.mousePosition):
             event.active = parent
             coordinate = parent.get_coordinate(location = event.mousePosition, absolute = True)

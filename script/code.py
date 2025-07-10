@@ -8,10 +8,10 @@ from script.textEngine.text import FancyDisplay, TextEditor
 class CodeEditor(TextEditor):
     def __init__(self, text = "", position = (0, 0), size = (400, 300),
                  background = palette.dark0, foreground = palette.white, highlight_foreground = (100, 200, 255),
-                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0),
+                 font = None, font_size = 15, margin = (0, 0), spacing = (0, 0), real_size = None, offset = None,
                  output_channel = None):
         super().__init__(text, position, size, background, foreground, highlight_foreground,
-                         font, font_size, margin, spacing)
+                         font, font_size, margin, spacing, real_size, offset)
         from script.textEngine.keymap import code_keymap
         self.action = EditAction(code_keymap)
 
@@ -101,13 +101,14 @@ class CodeEditor(TextEditor):
 
         try:
             exec(self.text)
-            self.print(output.getvalue() + "\nprocess finished with exit code 0")
+            self.print(output.getvalue())
+            self.print("process finished with exit code 0", palette.lime)
         except Exception as e:
             exception = traceback.extract_tb(e.__traceback__)[1:]
             error.write("Traceback (most recent call last):\n" + "".join(traceback.format_list(exception)) +
                         f"{type(e).__name__}: {e}\n")
             self.print(error.getvalue(), palette.red)
-            self.print("\nprocess finished with exit code 1")
+            self.print("\nprocess finished with exit code 1", palette.lightRed)
 
         sys.stdout = stdout
         sys.stderr = stderr
