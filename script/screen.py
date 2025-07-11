@@ -18,7 +18,7 @@ class Screen(Object):
                                   margin = (10, 10), spacing = (0, 3))
 
         self.text = CodeEditor("", (210, 10), (580, 580), font_size = 13,
-                               margin = (10, 10), spacing = (0, 3), output_channel = self.output)
+                               margin = (10, 10), spacing = (0, 3), output_channel = self.output, font = "inter")
 
         self.testButton = Button((0, 0), (100, 202))
 

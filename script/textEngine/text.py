@@ -214,6 +214,7 @@ class TextDisplay(FancyDisplay):
         self.cursor = Cursor()
         self.highlight = Cursor()
         self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
+        self.targetOffset = None
 
     def write(self, text):
         super().write(text)
@@ -250,20 +251,44 @@ class TextDisplay(FancyDisplay):
             parent.draw_rect(palette.dark3,
                              (self.rect.x - 1, self.rect.y - 1, self.rect.width + 2, self.rect.height + 2))
 
+    def target_offset(self, side, *args):
+        if side == 0:
+            if self.targetOffset:
+                self.targetOffset[0] = args[0]
+            else:
+                self.targetOffset = [args[0], self.offset[1]]
+        elif side == 1:
+            if self.targetOffset:
+                self.targetOffset[1] = args[0]
+            else:
+                self.targetOffset = [self.offset[0], args[0]]
+        else:
+            self.targetOffset = [args[0], args[1]]
+
     def fit_screen(self):
         target_location = (self.cursor.targetLocation[0], self.cursor.targetLocation[1] + self.font.height)
 
         for i in range(2):
             if target_location[i] >= self.offset[i] + self.rect.size[i] - 10:
-                self.offset[i] = target_location[i] - self.rect.size[i] + 10
+                self.target_offset(i, target_location[i] - self.rect.size[i] + 10)
             elif target_location[i] <= self.offset[i] + 10:
-                self.offset[i] = target_location[i] - 10
+                self.target_offset(i, target_location[i] - 10)
+            if self.offset[i] + self.rect.size[i] > self.realSize[i]:
+                self.target_offset(i, max(0, self.realSize[i] - self.rect.size[i]))
 
     def refresh(self, parent, event):
         super().refresh(parent, event)
+
         self.realSize = self.charMax
         if self.action.refreshScroll and self.cursor.location is not None:
             self.fit_screen()
+
+        if self.targetOffset:
+            if self.targetOffset != self.offset:
+                for i in range(2):
+                    self.offset[i] = round((self.targetOffset[i] + self.offset[i]) / 2)
+            else:
+                self.targetOffset = None
 
         self.action.refresh(self, event)
 
