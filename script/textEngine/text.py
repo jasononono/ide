@@ -11,6 +11,9 @@ from script.textEngine.action import ViewAction, EditAction
 from script.textEngine.scroll import Scroll
 
 
+# OFFSET BEHAVIOUR NOT DEFINED FOR CURSOR: try printing a lot of things and highlighting in output pane
+
+
 class TextEffect:
     def __init__(self, opacity = 255, colour = None, highlight = 0):
         self.opacity = opacity
@@ -217,16 +220,19 @@ class TextDisplay(FancyDisplay):
         self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
         self.targetOffset = None
         self.fixingOffset = False
+        self.to_end = False
 
     def write(self, text):
         super().write(text)
         self.cursor.position = None
         self.highlight.position = None
+        self.to_end = True
 
     def erase(self):
         super().erase()
         self.cursor.position = None
         self.highlight.position = None
+        self.to_end = True
 
     def display_char(self, char, line, pointer, position):
         highlighted = int(self.highlight.position is not None and min(self.cursor.position, self.highlight.position) <=
@@ -287,6 +293,10 @@ class TextDisplay(FancyDisplay):
                         self.offset[i] = math.floor((self.offset[i] + self.targetOffset[i]) / 2)
             else:
                 self.offset = self.targetOffset.copy()
+
+        if self.to_end:
+            self.targetOffset = [max(0, self.realSize[i] - self.rect.size[i]) for i in range(2)]
+            self.to_end = False
 
         if event.active is self:
             parent.draw_rect(palette.dark3,

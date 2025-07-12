@@ -26,15 +26,15 @@ class ViewAction:
         self.modifier = None
         self.mouseDown = False
 
-    def press(self, parent):
-        key = self.keyboard.retrieve(self.keyPressed, self.modifier)
+    def press(self, key, parent):
         if key is None:
             return
         if callable(key):
             key(parent)
         else:
             parent.append(key)
-        self.refreshScroll = True
+        if isinstance(key, str) or key.follow:
+            self.refreshScroll = True
 
     def refresh_mouse(self, parent, event):
         if parent.scrolling:
@@ -61,8 +61,9 @@ class ViewAction:
         for i in event.key_down():
             if i in self.keyboard.map.keys():
                 self.keyPressed = i
-                self.press(parent)
-                self.keyCooldown = 30
+                key = self.keyboard.retrieve(self.keyPressed, self.modifier)
+                self.press(key, parent)
+                self.keyCooldown = float("inf") if (not isinstance(key, str) and not key.repeat) else 30
                 p.mouse.set_visible(False)
 
         if event.key_up(self.keyPressed):
@@ -73,7 +74,8 @@ class ViewAction:
             if self.keyCooldown > 0:
                 self.keyCooldown -= 1
             else:
-                self.press(parent)
+                key = self.keyboard.retrieve(self.keyPressed, self.modifier)
+                self.press(key, parent)
                 self.keyCooldown = 3
 
     def refresh(self, parent, event):
