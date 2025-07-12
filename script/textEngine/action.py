@@ -63,7 +63,7 @@ class ViewAction:
                 self.keyPressed = i
                 key = self.keyboard.retrieve(self.keyPressed, self.modifier)
                 self.press(key, parent)
-                self.keyCooldown = float("inf") if (not isinstance(key, str) and not key.repeat) else 30
+                self.keyCooldown = float("inf") if (callable(key) and not key.repeat) else 30
                 p.mouse.set_visible(False)
 
         if event.key_up(self.keyPressed):
