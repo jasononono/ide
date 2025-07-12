@@ -1,4 +1,5 @@
 import pygame as p
+import math
 import pyperclip
 import settings
 from script.utility import Object
@@ -215,6 +216,7 @@ class TextDisplay(FancyDisplay):
         self.highlight = Cursor()
         self.highlightForeground = [(i + j) / 2 for i, j in zip(highlight_foreground, background)]
         self.targetOffset = None
+        self.fixingOffset = False
 
     def write(self, text):
         super().write(text)
@@ -245,51 +247,61 @@ class TextDisplay(FancyDisplay):
             self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
         super().display_char(char, line, pointer, position)
 
+    def fit_screen(self, cursor):
+        if cursor.position is None:
+            return
+        target_location = (cursor.targetLocation[0], cursor.targetLocation[1] + self.font.height)
+
+        for i in range(2):
+            if target_location[i] >= self.offset[i] + self.rect.size[i] - 10:
+                self.target_offset(i, target_location[i] - self.rect.size[i] + 10)
+            elif target_location[i] <= self.offset[i] + 10 + self.font.height:
+                self.target_offset(i, target_location[i] - 10 - self.font.height)
+            if self.offset[i] + self.rect.size[i] > self.realSize[i]:
+                self.target_offset(i, max(0, self.realSize[i] - self.rect.size[i]))
+
     def update(self, parent, event):
         super().update(parent, event)
+
+        self.realSize = self.charMax
+
+        if not self.cursor.moving:
+            self.fixingOffset = False
+
+        if self.action.refreshScroll:
+            self.fixingOffset = True
+            self.targetOffset = self.offset.copy()
+
+        if self.fixingOffset:
+            self.fit_screen(self.cursor)
+        if self.offset == self.targetOffset:
+            self.targetOffset = None
+            self.fixingOffset = False
+
+        if self.targetOffset:
+            if settings.smoothCursor:
+                for i in range(2):
+                    if self.offset[i] < self.targetOffset[i]:
+                        self.offset[i] = math.ceil((self.offset[i] + self.targetOffset[i]) / 2)
+                    else:
+                        self.offset[i] = math.floor((self.offset[i] + self.targetOffset[i]) / 2)
+            else:
+                self.offset = self.targetOffset.copy()
+
         if event.active is self:
             parent.draw_rect(palette.dark3,
                              (self.rect.x - 1, self.rect.y - 1, self.rect.width + 2, self.rect.height + 2))
 
     def target_offset(self, side, *args):
         if side == 0:
-            if self.targetOffset:
-                self.targetOffset[0] = args[0]
-            else:
-                self.targetOffset = [args[0], self.offset[1]]
+            self.targetOffset[0] = args[0]
         elif side == 1:
-            if self.targetOffset:
-                self.targetOffset[1] = args[0]
-            else:
-                self.targetOffset = [self.offset[0], args[0]]
+            self.targetOffset[1] = args[0]
         else:
             self.targetOffset = [args[0], args[1]]
 
-    def fit_screen(self):
-        target_location = (self.cursor.targetLocation[0], self.cursor.targetLocation[1] + self.font.height)
-
-        for i in range(2):
-            if target_location[i] >= self.offset[i] + self.rect.size[i] - 10:
-                self.target_offset(i, target_location[i] - self.rect.size[i] + 10)
-            elif target_location[i] <= self.offset[i] + 10:
-                self.target_offset(i, target_location[i] - 10)
-            if self.offset[i] + self.rect.size[i] > self.realSize[i]:
-                self.target_offset(i, max(0, self.realSize[i] - self.rect.size[i]))
-
     def refresh(self, parent, event):
         super().refresh(parent, event)
-
-        self.realSize = self.charMax
-        if self.action.refreshScroll and self.cursor.location is not None:
-            self.fit_screen()
-
-        if self.targetOffset:
-            if self.targetOffset != self.offset:
-                for i in range(2):
-                    self.offset[i] = round((self.targetOffset[i] + self.offset[i]) / 2)
-            else:
-                self.targetOffset = None
-
         self.action.refresh(self, event)
 
     def select_all(self):
@@ -311,8 +323,10 @@ class TextEditor(TextDisplay):
         super().display_text(event)
         if self.highlight.position == self.cursor.position:
             self.highlight.position = None
+        self.cursor.refresh(self)
+        self.highlight.refresh(self)
         if event.active is self and self.highlight.position is None:
-            self.cursor.refresh(self)
+            self.cursor.display(self)
 
     def refresh(self, parent, event):
         if event.active is self and self.valid_mouse_position(event.mousePosition):
@@ -422,7 +436,8 @@ class TextEditor(TextDisplay):
         location = self.get_location(coordinate = (column, row))
         self.cursor.position = (len(self.text) if row == len(self.map) - 1 else
                                 self.get_position(location = (location[0],
-                                                              location[1] + self.font.height + self.spacing[1])))
+                                                              location[1] + self.font.height + self.spacing[1]),
+                                                  offset = False))
         self.cursor.blink = 0
 
     def highlight_up(self):
@@ -432,7 +447,8 @@ class TextEditor(TextDisplay):
         location = self.get_location(coordinate = (column, row))
         self.cursor.position = (0 if row == 0 else
                                 self.get_position(location = (location[0],
-                                                              location[1] - self.font.height - self.spacing[1])))
+                                                              location[1] - self.font.height - self.spacing[1]),
+                                                  offset = False))
         self.cursor.blink = 0
 
     def indent(self):

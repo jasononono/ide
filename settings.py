@@ -4,7 +4,7 @@ version = "0.4.3"
 highlightOpacity = 150
 
 """ ANIMATIONS """
-smoothCursor = True
+smoothCursor = False
 cursorAnimation = True
 cursorBlinkRate = 30
 
