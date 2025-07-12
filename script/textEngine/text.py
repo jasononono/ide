@@ -64,7 +64,7 @@ class StaticDisplay(Object):
     def display_char(self, char, line, pointer, position):
         if char != '\n':
             surface = self.font.render(char, self.foreground)
-            self.display(surface, (pointer - self.offset[0], self.get_line(line) - self.offset[1]))
+            self.display(surface, (pointer - self.offset[0], line - self.offset[1]))
 
     def display_text(self, event):
         self.map = [[]]
@@ -74,7 +74,9 @@ class StaticDisplay(Object):
         line = 0
 
         for n, i in enumerate(self.text):
-            self.display_char(i, line, pointer, n)
+            line_location = self.get_line(line)
+            self.display_char(i, line_location, pointer, n)
+
             if i == '\n':
                 self.charMax[0] = max(self.charMax[0], (self.map[-1][-1] if len(self.map[-1]) > 0 else 0))
                 self.map.append([])
@@ -202,8 +204,7 @@ class FancyDisplay(StaticDisplay):
             surface = self.font.render(char, colour)
             if settings.smoothText:
                 surface.set_alpha(self.textEffects[position].opacity)
-            self.display(surface, (pointer - self.offset[0],
-                                   self.margin[1] + line * (self.font.height + self.spacing[1]) - self.offset[1]))
+            self.display(surface, (pointer - self.offset[0], line - self.offset[1]))
 
 
 class TextDisplay(FancyDisplay):
@@ -237,7 +238,6 @@ class TextDisplay(FancyDisplay):
     def display_char(self, char, line, pointer, position):
         highlighted = int(self.highlight.position is not None and min(self.cursor.position, self.highlight.position) <=
                           position < max(self.cursor.position, self.highlight.position))
-        y_location = self.margin[1] + line * (self.font.height + self.spacing[1])
 
         surface = p.Surface((self.font.glyphs[char] + self.spacing[0], self.font.height + self.spacing[1]))
         surface.fill(self.highlightForeground)
@@ -248,9 +248,9 @@ class TextDisplay(FancyDisplay):
                                                     if highlighted else max(0, self.textEffects[position].highlight -
                                                                                settings.highlightFadeIn))
             surface.set_alpha(self.textEffects[position].highlight)
-            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
+            self.display(surface, (pointer - self.offset[0], line - self.offset[1]))
         elif highlighted:
-            self.display(surface, (pointer - self.offset[0], y_location - self.offset[1]))
+            self.display(surface, (pointer - self.offset[0], line - self.offset[1]))
         super().display_char(char, line, pointer, position)
 
     def fit_screen(self, cursor):
