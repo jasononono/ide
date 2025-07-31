@@ -12,7 +12,7 @@ p.init()
 screen = Screen()
 clock = p.time.Clock()
 
-p.display.set_caption(f"Beta IDE {settings.version}")
+p.display.set_caption(f"IDE {settings.version}")
 
 while screen.execute:
     clock.tick(60)

@@ -14,7 +14,7 @@ class Screen(Object):
         self.event = Event()
         self.execute = True
 
-        self.output = TextDisplay("Beta IDE", (800, 10), (390, 580), font_size = 13,
+        self.output = TextDisplay("IDE", (800, 10), (390, 580), font_size = 13,
                                   margin = (10, 10), spacing = (0, 3))
 
         self.text = CodeEditor("", (210, 10), (580, 580), font_size = 13,
