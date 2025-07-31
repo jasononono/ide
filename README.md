@@ -1,4 +1,4 @@
-# Beta IDE
+# IDE
 Integrated Development Environment
 
 See 'requirement.txt' for a list of dependencies and libraries
