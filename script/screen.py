@@ -2,7 +2,7 @@ import pygame as p
 from script.utility import Object, Event
 from assets import palette
 
-from script.textEngine.text import TextDisplay
+from script.textEngine.text import TextDisplay, StaticDisplay
 from script.code import CodeEditor
 from script.button import Button
 
@@ -20,6 +20,10 @@ class Screen(Object):
         self.text = CodeEditor("", (210, 10), (580, 580), font_size = 13,
                                margin = (10, 10), spacing = (0, 3), output_channel = self.output)
 
+        self.title = StaticDisplay("this is an ide lol\n\nctrl-r: run code\nctrl-v/c/x:\n   I believe the function of"
+                                   "\n   these keys are kinda\n   obvious",
+                                 (10, 10), (190, 400), font_size = 13, font = "inter")
+
         self.testButton = Button((0, 0), (100, 202))
 
     def refresh(self):
@@ -34,6 +38,7 @@ class Screen(Object):
 
         self.text.refresh(self, self.event)
         self.output.refresh(self, self.event)
+        self.title.refresh(self, self.event)
 
         # if self.testButton.refresh(self, self.event):
         #     print("esr")
