@@ -21,7 +21,7 @@ class Screen(Object):
                                margin = (10, 10), spacing = (0, 3), output_channel = self.output)
 
         self.title = StaticDisplay("this is an ide lol\n\nctrl-r: run code\nctrl-v/c/x:\n   I believe the function of"
-                                   "\n   these keys are kinda\n   obvious",
+                                   "\n   these keys are kinda\n   obvious\n\nwrite you program in\npython plz",
                                  (10, 10), (190, 400), font_size = 13, font = "inter")
 
         self.testButton = Button((0, 0), (100, 202))
