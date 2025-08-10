@@ -41,7 +41,12 @@ class Cursor:
             self.moving = True
 
     def _display(self, parent):
-        parent.display(self.surface, [self.location[i] - parent.offset[i] for i in range(2)])
+        location = [self.location[i] - parent.offset[i] for i in range(2)]
+        if parent.targetOffset is not None:
+            location[0] = max(parent.margin[0], min(parent.rect.size[0] - parent.margin[0] - 1, location[0]))
+            location[1] = max(parent.margin[1], min(parent.rect.size[1] - parent.margin[1] - parent.font.height,
+                                                    location[1]))
+        parent.display(self.surface, location)
 
     def display(self, parent):
         self.blink = (self.blink + 1) % (self.blinkRate * 2)
